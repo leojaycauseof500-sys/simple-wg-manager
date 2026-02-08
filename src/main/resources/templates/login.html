@@ -21,16 +21,25 @@
         document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
     </script>
 <body>
+<div class="language-selector">
+    <md-outlined-select id="languageSelect" label="语言" style="width: 120px;">
+        <md-select-option selected value="zh-CN">
+            <div slot="headline">中文</div>
+        </md-select-option>
+        <md-select-option value="en-US">
+            <div slot="headline">English</div>
+        </md-select-option>
+    </md-outlined-select>
+</div>
+
 <div class="container">
-    <!-- 左侧登录表单 -->
+
     <div class="login-form">
-        <!-- Logo区域 -->
         <div class="logo">
             <span class="material-symbols-outlined logo-icon">dashboard</span>
-            <span class="logo-text">MaterialApp</span>
+            <span class="logo-text">wg</span>
         </div>
 
-        <!-- 欢迎标题 -->
         <h1 class="welcome-title">欢迎回来</h1>
         <p class="welcome-subtitle">请登录您的账户继续操作</p>
 
