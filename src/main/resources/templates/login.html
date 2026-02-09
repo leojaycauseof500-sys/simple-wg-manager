@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +20,7 @@
 
         document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
     </script>
+    <meta name="current-lang" th:content="${#locale}">
 <body>
 <div class="language-selector">
     <md-outlined-select id="languageSelect" th:attr="label=#{login.language.label}" style="width: 120px;">
@@ -66,9 +67,12 @@
 
             <!-- 记住我和忘记密码 -->
             <div class="form-actions">
-                <md-checkbox id="remember" touch-target="wrapper">
+                <label>
+                    <md-checkbox id="remember" touch-target="wrapper"></md-checkbox>
                     <span th:text="#{login.remember}">记住我</span>
-                </md-checkbox>
+                </label>
+
+
                 <a href="#" style="color: #1a73e8; text-decoration: none; font-size: 14px;" th:text="#{login.forgot.password}">
                     忘记密码？
                 </a>
@@ -98,12 +102,20 @@
 
     // 密码可见性切换
     const toggleButton = document.getElementById('visibility')
-
     if (toggleButton) {
         toggleButton.addEventListener('click', () => {
             passwordField.type = passwordField.type === "password" ? "text" : "password"
         });
     }
+
+    //设置语言
+    setCurrentLanguage()
+
+    document.getElementById('languageSelect').addEventListener('change', (event) =>{
+        const selectedLang = event.target.value
+        const currentUrl = window.location.pathname;
+        window.location.href = currentUrl + '?lang=' + selectedLang;
+    })
 
     // 表单提交处理
     loginForm.addEventListener('submit', async (event) => {
@@ -127,7 +139,6 @@
             return;
         }
 
-        // 模拟登录过程
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
                 <md-circular-progress indeterminate style="--md-circular-progress-size: 20px;"></md-circular-progress>
@@ -202,6 +213,43 @@
         }, 2000)
     }
 
+    function setCurrentLanguage() {
+        const languageSelect = document.getElementById('languageSelect');
+        if (!languageSelect) return;
+
+        // 从meta标签获取当前语言（由Thymeleaf设置）
+        const metaLang = document.querySelector('meta[name="current-lang"]');
+        let currentLang = metaLang ? metaLang.getAttribute('content') : null;
+
+        // 如果meta标签没有，尝试从URL参数获取
+        if (!currentLang) {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentLang = urlParams.get('lang');
+        }
+
+        // 如果还没有，使用html的lang属性
+        if (!currentLang) {
+            currentLang = document.documentElement.lang;
+        }
+
+        // 标准化语言代码（zh-CN 或 en-US）
+        if (currentLang) {
+            // 转换格式，例如：zh_CN -> zh-CN
+            currentLang = currentLang.replace('_', '-');
+
+            // 设置选中状态
+            const options = languageSelect.querySelectorAll('md-select-option');
+            options.forEach(option => {
+                option.selected = false;
+            });
+
+            const targetOption = languageSelect.querySelector(`md-select-option[value="${currentLang}"]`);
+            if (targetOption) {
+                targetOption.selected = true;
+                languageSelect.value = currentLang;
+            }
+        }
+    }
 </script>
 </body>
 </html>

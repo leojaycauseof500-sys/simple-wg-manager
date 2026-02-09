@@ -26,20 +26,12 @@ body {
     min-height: 400px;
 }
 
-/*.mini-container {*/
-/*    display: flex;*/
-/*    position: fixed;*/
-/*    width: 100%;*/
-/*    min-width: 200px;*/
-/*    background: white;*/
-/*    border-radius: 5px;*/
-/*    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);*/
-/*    transform: translateX(-50%);*/
-/*    overflow: hidden;*/
-/*    min-height: 50px;*/
-/*    bottom: 20px;*/
-/*    left: 50%;*/
-/*}*/
+.language-selector {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
 
 .mini-container {
     display: inline-flex;
