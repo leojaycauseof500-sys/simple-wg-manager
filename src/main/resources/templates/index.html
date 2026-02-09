@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{home.page.title}">WireGuard 管理面板</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script type="importmap">
+        {
+          "imports": {
+            "@material/web/": "https://esm.run/@material/web/"
+          }
+        }
+    </script>
+    <script type="module">
+        import '@material/web/all.js';
+        import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+
+        document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    </script>
+    
+    <!-- 存储当前语言供JS使用 -->
+    <meta name="current-lang" th:content="${#locale}">
+</head>
+<body>
+<!-- 顶部导航栏 -->
+<header class="app-header">
+    <div class="header-left">
+        <div class="logo">
+            <span class="material-symbols-outlined logo-icon">vpn_key</span>
+            <span class="logo-text" th:text="#{home.logo.text}">WireGuard</span>
+        </div>
+        <h1 class="app-title" th:text="#{home.title}">WireGuard 管理面板</h1>
+    </div>
+    
+    <div class="header-right">
+        <!-- 语言选择器 -->
+        <div class="language-selector">
+            <md-outlined-select id="languageSelect" th:attr="label=#{home.language.label}" style="width: 120px;">
+                <md-select-option value="zh-CN">
+                    <div slot="headline" th:text="#{home.language.zh}">中文</div>
+                </md-select-option>
+                <md-select-option value="en-US">
+                    <div slot="headline" th:text="#{home.language.en}">English</div>
+                </md-select-option>
+            </md-outlined-select>
+        </div>
+        
+        <!-- 用户菜单 -->
+        <md-menu>
+            <md-icon-button slot="trigger">
+                <md-icon>account_circle</md-icon>
+            </md-icon-button>
+            <md-menu-item>
+                <md-icon slot="start">person</md-icon>
+                <div slot="headline" th:text="#{home.profile}">个人资料</div>
+            </md-menu-item>
+            <md-menu-item>
+                <md-icon slot="start">settings</md-icon>
+                <div slot="headline" th:text="#{home.settings}">设置</div>
+            </md-menu-item>
+            <md-divider></md-divider>
+            <md-menu-item>
+                <md-icon slot="start">logout</md-icon>
+                <div slot="headline" th:text="#{home.logout}">退出登录</div>
+            </md-menu-item>
+        </md-menu>
+    </div>
+</header>
+
+<!-- 主内容区域 -->
+<div class="main-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <md-list>
+                <md-list-item type="button" class="active">
+                    <md-icon slot="start">dashboard</md-icon>
+                    <div slot="headline" th:text="#{home.nav.dashboard}">仪表板</div>
+                </md-list-item>
+                <md-list-item type="button">
+                    <md-icon slot="start">group</md-icon>
+                    <div slot="headline" th:text="#{home.nav.clients}">客户端管理</div>
+                </md-list-item>
+                <md-list-item type="button">
+                    <md-icon slot="start">settings</md-icon>
+                    <div slot="headline" th:text="#{home.nav.config}">服务器配置</div>
+                </md-list-item>
+                <md-list-item type="button">
+                    <md-icon slot="start">monitoring</md-icon>
+                    <div slot="headline" th:text="#{home.nav.monitor}">流量监控</div>
+                </md-list-item>
+                <md-list-item type="button">
+                    <md-icon slot="start">history</md-icon>
+                    <div slot="headline" th:text="#{home.nav.logs}">系统日志</div>
+                </md-list-item>
+            </md-list>
+        </nav>
+    </aside>
+
+    <!-- 内容区域 -->
+    <main class="content">
+        <!-- 欢迎卡片 -->
+        <div class="welcome-card">
+            <div class="welcome-content">
+                <h2 th:text="#{home.welcome.title}">欢迎回来！</h2>
+                <p th:text="#{home.welcome.subtitle}">WireGuard 管理面板已准备就绪，您可以开始管理您的 VPN 服务。</p>
+            </div>
+            <md-icon class="welcome-icon">vpn_lock</md-icon>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3 th:text="#{home.stats.clients}">在线客户端</h3>
+                    <div class="stat-value">12</div>
+                    <div class="stat-change positive">+2 今日</div>
+                </div>
+                <md-icon class="stat-icon">group</md-icon>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3 th:text="#{home.stats.traffic}">今日流量</h3>
+                    <div class="stat-value">1.2 GB</div>
+                    <div class="stat-change positive">+15%</div>
+                </div>
+                <md-icon class="stat-icon">network_check</md-icon>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3 th:text="#{home.stats.uptime}">运行时间</h3>
+                    <div class="stat-value">15 天</div>
+                    <div class="stat-change">稳定运行</div>
+                </div>
+                <md-icon class="stat-icon">schedule</md-icon>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3 th:text="#{home.stats.servers}">服务器状态</h3>
+                    <div class="stat-value">正常</div>
+                    <div class="stat-change positive">100%</div>
+                </div>
+                <md-icon class="stat-icon">check_circle</md-icon>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="quick-actions">
+            <h3 th:text="#{home.quick.actions}">快速操作</h3>
+            <div class="actions-grid">
+                <md-filled-tonal-button>
+                    <md-icon slot="icon">add</md-icon>
+                    <span th:text="#{home.action.addClient}">添加客户端</span>
+                </md-filled-tonal-button>
+                <md-filled-tonal-button>
+                    <md-icon slot="icon">download</md-icon>
+                    <span th:text="#{home.action.downloadConfig}">下载配置</span>
+                </md-filled-tonal-button>
+                <md-filled-tonal-button>
+                    <md-icon slot="icon">restart_alt</md-icon>
+                    <span th:text="#{home.action.restartService}">重启服务</span>
+                </md-filled-tonal-button>
+                <md-filled-tonal-button>
+                    <md-icon slot="icon">description</md-icon>
+                    <span th:text="#{home.action.viewLogs}">查看日志</span>
+                </md-filled-tonal-button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 底部信息 -->
+<footer class="app-footer">
+    <p th:text="#{home.footer.copyright}">© 2024 WireGuard 管理面板</p>
+    <p th:text="#{home.footer.version}">版本 1.0.0</p>
+</footer>
+
+<script>
+    // 设置当前语言到下拉菜单
+    function setCurrentLanguage() {
+        const languageSelect = document.getElementById('languageSelect');
+        if (!languageSelect) return;
+        
+        // 从meta标签获取当前语言（由Thymeleaf设置）
+        const metaLang = document.querySelector('meta[name="current-lang"]');
+        let currentLang = metaLang ? metaLang.getAttribute('content') : null;
+        
+        // 如果meta标签没有，尝试从URL参数获取
+        if (!currentLang) {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentLang = urlParams.get('lang');
+        }
+        
+        // 如果还没有，使用html的lang属性
+        if (!currentLang) {
+            currentLang = document.documentElement.lang;
+        }
+        
+        // 标准化语言代码（zh-CN 或 en-US）
+        if (currentLang) {
+            // 转换格式，例如：zh_CN -> zh-CN
+            currentLang = currentLang.replace('_', '-');
+            
+            // 设置选中状态
+            const options = languageSelect.querySelectorAll('md-select-option');
+            options.forEach(option => {
+                option.selected = false;
+            });
+            
+            const targetOption = languageSelect.querySelector(`md-select-option[value="${currentLang}"]`);
+            if (targetOption) {
+                targetOption.selected = true;
+                languageSelect.value = currentLang;
+            }
+        }
+    }
+
+    // 页面加载完成后设置当前语言
+    document.addEventListener('DOMContentLoaded', function() {
+        setCurrentLanguage();
+        
+        // 语言切换事件
+        document.getElementById('languageSelect').addEventListener('change', (event) =>{
+            const selectedLang = event.target.value;
+            
+            // 使用URL参数切换语言
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', selectedLang);
+            window.location.href = url.toString();
+        });
+
+        // 侧边栏导航点击事件
+        const navItems = document.querySelectorAll('.sidebar-nav md-list-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                navItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 退出登录功能
+        const logoutItem = document.querySelector('md-menu-item:last-child');
+        if (logoutItem) {
+            logoutItem.addEventListener('click', function() {
+                window.location.href = '/logout';
+            });
+        }
+    });
+</script>
+</body>
+</html>
