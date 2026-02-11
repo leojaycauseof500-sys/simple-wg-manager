@@ -10,9 +10,7 @@ class ShellCommandExecutor : CommandExecutor() {
         timeoutSec: Long
     ): CommandResult {
         return try {
-            val process = ProcessBuilder("/bin/bash", "-c", command)
-                .redirectErrorStream(true)
-                .start()
+            val process = createProcessBuilder(command).start()
 
             // 关键：设置超时防止挂起
             val completed = process.waitFor(timeoutSec, TimeUnit.SECONDS)
@@ -29,5 +27,9 @@ class ShellCommandExecutor : CommandExecutor() {
         }
     }
 
-}
+    // 提取的方法，便于测试中重写
+    open fun createProcessBuilder(command: String): ProcessBuilder {
+        return ProcessBuilder("/bin/bash", "-c", command)
+            .redirectErrorStream(true)
+    }
 }
