@@ -3,6 +3,7 @@ package com.leojay.simplewgad.util
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
+//todo 考虑多平台
 @Component
 class ShellCommandExecutor : CommandExecutor() {
     override fun runCommand(
@@ -28,7 +29,7 @@ class ShellCommandExecutor : CommandExecutor() {
     }
 
     // 提取的方法，便于测试中重写
-    open fun createProcessBuilder(command: String): ProcessBuilder {
+    fun createProcessBuilder(command: String): ProcessBuilder {
         return ProcessBuilder("/bin/bash", "-c", command)
             .redirectErrorStream(true)
     }
