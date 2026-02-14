@@ -11,7 +11,14 @@ class ShellCommandExecutor : CommandExecutor() {
         timeoutSec: Long
     ): CommandResult {
         return try {
-            val process = createProcessBuilder(command).start()
+            // 自动为需要特权的命令添加 sudo
+            val finalCommand = if (needsSudo(command)) {
+                "sudo $command"
+            } else {
+                command
+            }
+            
+            val process = createProcessBuilder(finalCommand).start()
 
             // 关键：设置超时防止挂起
             val completed = process.waitFor(timeoutSec, TimeUnit.SECONDS)
@@ -32,5 +39,30 @@ class ShellCommandExecutor : CommandExecutor() {
     fun createProcessBuilder(command: String): ProcessBuilder {
         return ProcessBuilder("/bin/bash", "-c", command)
             .redirectErrorStream(true)
+    }
+    
+    /**
+     * 判断命令是否需要 sudo 权限
+     * 根据命令内容决定是否自动添加 sudo
+     */
+    private fun needsSudo(command: String): Boolean {
+        // 如果命令已经以 sudo 开头，不再重复添加
+        if (command.trimStart().startsWith("sudo ")) {
+            return false
+        }
+        
+        // 需要特权的命令列表
+        val privilegedCommands = listOf(
+            "wg ",
+            "wg-quick ",
+            "ip link",
+            "ip addr",
+            "ip route",
+            "lsmod",
+            "modprobe",
+            "systemctl"
+        )
+        
+        return privilegedCommands.any { command.contains(it) }
     }
 }
