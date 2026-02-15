@@ -1,3 +1,7 @@
 spring:
   application:
     name: simple-wg-ad-prod
+
+logging:
+  level:
+    com.leojay.simplewgad: INFO

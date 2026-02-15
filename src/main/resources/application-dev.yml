@@ -4,4 +4,7 @@ spring:
   thymeleaf:
     cache: false
     prefix: file:src/main/resources/templates/
+logging:
+  level:
+    com.leojay.simplewgad : DEBUG
 

@@ -10,7 +10,6 @@
 - ✅ 网络接口状态检查
 - ✅ 详细的 WireGuard 配置信息查看
 - ✅ 多语言支持（中文/英文）
-- ✅ 响应式 Web 界面
 
 ## 系统要求
 
@@ -200,22 +199,3 @@ src/main/kotlin/com/leojay/simplewgad/
 # 运行集成测试
 ./gradlew integrationTest
 ```
-
-## 贡献指南
-
-1. Fork 项目
-2. 创建功能分支
-3. 提交更改
-4. 推送到分支
-5. 创建 Pull Request
-
-## 许可证
-
-本项目采用 MIT 许可证 - 查看 LICENSE 文件了解详情。
-
-## 支持
-
-如有问题，请：
-1. 查看本文档
-2. 检查 Issues 页面
-3. 创建新的 Issue 描述问题

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+<!-- 定义属性 -->
+<property name="LOG_PATH" value="./logs"/>
+<property name="LOG_FILE" value="simple-wg-ad"/>
+<property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+<!-- 控制台输出 -->
+<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+        <pattern>${LOG_PATTERN}</pattern>
+        <charset>UTF-8</charset>
+    </encoder>
+</appender>
+
+<!-- 滚动文件输出 -->
+<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}.log</file>
+    <encoder>
+        <pattern>${LOG_PATTERN}</pattern>
+        <charset>UTF-8</charset>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <!-- 按天滚动 -->
+        <fileNamePattern>${LOG_PATH}/${LOG_FILE}.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <!-- 保留30天的日志 -->
+        <maxHistory>30</maxHistory>
+        <!-- 日志文件最大大小 -->
+        <totalSizeCap>1GB</totalSizeCap>
+    </rollingPolicy>
+</appender>
+
+<!-- JSON 格式日志输出（可选） -->
+<appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}-json.log</file>
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <customFields>{"app":"simple-wg-ad","version":"${version:-0.0.1}"}</customFields>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <fileNamePattern>${LOG_PATH}/${LOG_FILE}-json.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <maxHistory>7</maxHistory>
+        <totalSizeCap>500MB</totalSizeCap>
+    </rollingPolicy>
+</appender>
+
+<!-- 日志级别配置 -->
+<logger name="com.leojay.simplewgad" level="DEBUG"/>
+<logger name="org.springframework" level="INFO"/>
+<logger name="org.hibernate" level="WARN"/>
+
+<!-- 根日志配置 -->
+<root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+    <!-- 如果需要 JSON 日志，取消注释下面一行 -->
+    <!-- <appender-ref ref="JSON_FILE"/> -->
+</root>
+
+<!-- 开发环境配置 -->
+<springProfile name="dev">
+    <logger name="com.leojay.simplewgad" level="DEBUG"/>
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</springProfile>
+
+<!-- 生产环境配置 -->
+<springProfile name="prod">
+    <logger name="com.leojay.simplewgad" level="INFO"/>
+    <root level="WARN">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</springProfile>
+</configuration>

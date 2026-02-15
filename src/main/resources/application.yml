@@ -4,3 +4,13 @@ spring:
     encoding: UTF-8
   web:
     locale: en_US
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    org.springframework.web : INFO
+
+wg-manager:
+  default:
+    interface-name: wg0 #管理页面在启动时会去查找这个接口的信息
+
