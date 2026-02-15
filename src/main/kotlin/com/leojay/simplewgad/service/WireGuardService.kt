@@ -14,6 +14,7 @@ class WireGuardService(
     private val wgEntryParser: WgEntryParser
 ) {
     private val logger = LoggerFactory.getLogger(WireGuardService::class.java)
+    
     fun checkWireGuardStatus(): WireGuardStatus {
         return try {
             val wgEntries = getWireGuardStatistics()
@@ -32,8 +33,6 @@ class WireGuardService(
             )
         }
     }
-
-
 
     /**
      * 获取 WireGuard 详细状态信息（使用 wg 命令）
@@ -56,9 +55,106 @@ class WireGuardService(
         return wgEntryParser.parseWgDump(getWireGuardDetails().split('\n'))
     }
 
-    private fun checkKernelModule(): Boolean {
-        val result = commandExecutor.runCommand("lsmod | grep -q wireguard", 5)
-        return result.exitCode == 0
+    /**
+     * 获取服务器配置信息
+     */
+    fun getServerConfig(): ServerConfig {
+        return try {
+            // 获取接口配置
+            val interfaceConfig = getInterfaceConfig()
+            
+            // 获取配置文件内容
+            val configFileContent = getConfigFileContent(interfaceConfig.interfaceName)
+            
+            // 获取系统信息
+            val systemInfo = getSystemInfo()
+            
+            ServerConfig(
+                interfaceConfig = interfaceConfig,
+                configFileContent = configFileContent,
+                systemInfo = systemInfo,
+                success = true
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to get server config", e)
+            ServerConfig(
+                interfaceConfig = null,
+                configFileContent = null,
+                systemInfo = null,
+                success = false,
+                errorMessage = e.message
+            )
+        }
+    }
+    
+    /**
+     * 获取接口配置信息
+     */
+    private fun getInterfaceConfig(): InterfaceConfig {
+        val wgEntries = getWireGuardStatistics()
+        
+        val interfaceEntry = wgEntries.find { it is WgEntry.Interface } as? WgEntry.Interface
+        val peerEntries = wgEntries.filterIsInstance<WgEntry.Peer>()
+        
+        return InterfaceConfig(
+            interfaceName = interfaceEntry?.name ?: "unknown",
+            publicKey = interfaceEntry?.publicKey ?: "unknown",
+            listenPort = interfaceEntry?.listenPort ?: 0,
+            peerCount = peerEntries.size,
+            peers = peerEntries.map { peer ->
+                PeerInfo(
+                    publicKey = peer.publicKey,
+                    endpoint = peer.endpoint,
+                    allowedIps = peer.allowedIps,
+                    latestHandshake = peer.latestHandshake,
+                    transferRx = peer.transferRx,
+                    transferTx = peer.transferTx
+                )
+            }
+        )
+    }
+    
+    /**
+     * 获取配置文件内容
+     */
+    private fun getConfigFileContent(interfaceName: String): String? {
+        val configPath = "/etc/wireguard/$interfaceName.conf"
+        val result = commandExecutor.runCommand("sudo cat $configPath", 5)
+        
+        return if (result.exitCode == 0) {
+            result.output
+        } else {
+            logger.warn("Failed to read config file at $configPath: ${result.errMsg}")
+            null
+        }
+    }
+    
+    /**
+     * 获取系统信息
+     */
+    private fun getSystemInfo(): SystemInfo {
+        // 获取内核版本
+        val kernelResult = commandExecutor.runCommand("uname -r", 5)
+        val kernelVersion = if (kernelResult.exitCode == 0) kernelResult.output.trim() else "unknown"
+        
+        // 获取 WireGuard 版本
+        val wgVersionResult = commandExecutor.runCommand("wg --version", 5)
+        val wgVersion = if (wgVersionResult.exitCode == 0) wgVersionResult.output.trim() else "unknown"
+        
+        // 获取系统负载
+        val uptimeResult = commandExecutor.runCommand("uptime", 5)
+        val uptime = if (uptimeResult.exitCode == 0) uptimeResult.output.trim() else "unknown"
+        
+        // 获取网络接口信息
+        val ipResult = commandExecutor.runCommand("ip addr show", 5)
+        val ipInfo = if (ipResult.exitCode == 0) ipResult.output else "unknown"
+        
+        return SystemInfo(
+            kernelVersion = kernelVersion,
+            wireGuardVersion = wgVersion,
+            uptime = uptime,
+            ipInfo = ipInfo
+        )
     }
 
     private fun checkProcessRunning(wgEntries : List<WgEntry>): Boolean {
@@ -89,6 +185,48 @@ class WireGuardService(
             else -> ServiceStatus.STOPPED
         }
     }
-
-
 }
+
+/**
+ * 服务器配置数据类
+ */
+data class ServerConfig(
+    val interfaceConfig: InterfaceConfig?,
+    val configFileContent: String?,
+    val systemInfo: SystemInfo?,
+    val success: Boolean,
+    val errorMessage: String? = null
+)
+
+/**
+ * 接口配置数据类
+ */
+data class InterfaceConfig(
+    val interfaceName: String,
+    val publicKey: String,
+    val listenPort: Int,
+    val peerCount: Int,
+    val peers: List<PeerInfo>
+)
+
+/**
+ * 对等端信息数据类
+ */
+data class PeerInfo(
+    val publicKey: String,
+    val endpoint: String,
+    val allowedIps: List<String>,
+    val latestHandshake: Long,
+    val transferRx: Long,
+    val transferTx: Long
+)
+
+/**
+ * 系统信息数据类
+ */
+data class SystemInfo(
+    val kernelVersion: String,
+    val wireGuardVersion: String,
+    val uptime: String,
+    val ipInfo: String
+)
