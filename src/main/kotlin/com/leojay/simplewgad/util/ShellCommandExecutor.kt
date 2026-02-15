@@ -17,7 +17,7 @@ class ShellCommandExecutor : CommandExecutor() {
             } else {
                 command
             }
-            
+
             val process = createProcessBuilder(finalCommand).start()
 
             // 关键：设置超时防止挂起
@@ -28,7 +28,8 @@ class ShellCommandExecutor : CommandExecutor() {
             }
 
             val output = process.inputStream.bufferedReader().readText()
-            CommandResult(process.exitValue(), output, "")
+            val exitCode = process.exitValue()
+            CommandResult(process.exitValue(), output, if (exitCode == 0) null else output)
         } catch (e: Exception) {
             logger.error("Command execution failed: {}", e.message)
             CommandResult(-1, "", e.message ?: "Unknown error")
@@ -40,7 +41,7 @@ class ShellCommandExecutor : CommandExecutor() {
         return ProcessBuilder("/bin/bash", "-c", command)
             .redirectErrorStream(true)
     }
-    
+
     /**
      * 判断命令是否需要 sudo 权限
      * 根据命令内容决定是否自动添加 sudo
@@ -50,7 +51,7 @@ class ShellCommandExecutor : CommandExecutor() {
         if (command.trimStart().startsWith("sudo ")) {
             return false
         }
-        
+
         // 需要特权的命令列表
         val privilegedCommands = listOf(
             "wg ",
@@ -62,7 +63,7 @@ class ShellCommandExecutor : CommandExecutor() {
             "modprobe",
             "systemctl"
         )
-        
-        return privilegedCommands.any { command.contains(it) }
+
+        return privilegedCommands.any { command.startsWith(it) }
     }
 }

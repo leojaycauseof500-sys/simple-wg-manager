@@ -14,7 +14,7 @@ class WireGuardService(
     private val wgEntryParser: WgEntryParser
 ) {
     private val logger = LoggerFactory.getLogger(WireGuardService::class.java)
-    
+
     fun checkWireGuardStatus(): WireGuardStatus {
         return try {
             val wgEntries = getWireGuardStatistics()
@@ -62,13 +62,13 @@ class WireGuardService(
         return try {
             // 获取接口配置
             val interfaceConfig = getInterfaceConfig()
-            
+
             // 获取配置文件内容
             val configFileContent = getConfigFileContent(interfaceConfig.interfaceName)
-            
+
             // 获取系统信息
             val systemInfo = getSystemInfo()
-            
+
             ServerConfig(
                 interfaceConfig = interfaceConfig,
                 configFileContent = configFileContent,
@@ -86,16 +86,16 @@ class WireGuardService(
             )
         }
     }
-    
+
     /**
      * 获取接口配置信息
      */
     private fun getInterfaceConfig(): InterfaceConfig {
         val wgEntries = getWireGuardStatistics()
-        
+
         val interfaceEntry = wgEntries.find { it is WgEntry.Interface } as? WgEntry.Interface
         val peerEntries = wgEntries.filterIsInstance<WgEntry.Peer>()
-        
+
         return InterfaceConfig(
             interfaceName = interfaceEntry?.name ?: "unknown",
             publicKey = interfaceEntry?.publicKey ?: "unknown",
@@ -113,14 +113,14 @@ class WireGuardService(
             }
         )
     }
-    
+
     /**
      * 获取配置文件内容
      */
     private fun getConfigFileContent(interfaceName: String): String? {
         val configPath = "/etc/wireguard/$interfaceName.conf"
         val result = commandExecutor.runCommand("sudo cat $configPath", 5)
-        
+
         return if (result.exitCode == 0) {
             result.output
         } else {
@@ -128,7 +128,7 @@ class WireGuardService(
             null
         }
     }
-    
+
     /**
      * 获取系统信息
      */
@@ -136,19 +136,19 @@ class WireGuardService(
         // 获取内核版本
         val kernelResult = commandExecutor.runCommand("uname -r", 5)
         val kernelVersion = if (kernelResult.exitCode == 0) kernelResult.output.trim() else "unknown"
-        
+
         // 获取 WireGuard 版本
         val wgVersionResult = commandExecutor.runCommand("wg --version", 5)
         val wgVersion = if (wgVersionResult.exitCode == 0) wgVersionResult.output.trim() else "unknown"
-        
+
         // 获取系统负载
         val uptimeResult = commandExecutor.runCommand("uptime", 5)
         val uptime = if (uptimeResult.exitCode == 0) uptimeResult.output.trim() else "unknown"
-        
+
         // 获取网络接口信息
         val ipResult = commandExecutor.runCommand("ip addr show", 5)
         val ipInfo = if (ipResult.exitCode == 0) ipResult.output else "unknown"
-        
+
         return SystemInfo(
             kernelVersion = kernelVersion,
             wireGuardVersion = wgVersion,
@@ -185,7 +185,7 @@ class WireGuardService(
             else -> ServiceStatus.STOPPED
         }
     }
-    
+
     /**
      * 添加新客户端
      */
@@ -193,12 +193,12 @@ class WireGuardService(
         return try {
             // 1. 生成客户端公私钥对
             val keyPair = generateKeyPair()
-            
+
             // 2. 获取服务器接口信息
             val interfaceConfig = getInterfaceConfig()
             val serverPublicKey = interfaceConfig.publicKey
             val serverEndpoint = getServerEndpoint()
-            
+
             // 3. 生成客户端配置
             val clientConfig = generateClientConfig(
                 clientName = clientName,
@@ -207,23 +207,23 @@ class WireGuardService(
                 serverEndpoint = serverEndpoint,
                 allowedIps = allowedIps
             )
-            
+
             // 4. 更新服务器配置文件
             val updateResult = updateServerConfig(
                 clientPublicKey = keyPair.publicKey,
                 allowedIps = allowedIps
             )
-            
+
             if (!updateResult.success) {
                 return ClientConfigResult(
                     success = false,
                     errorMessage = "更新服务器配置失败: ${updateResult.errorMessage}"
                 )
             }
-            
+
             // 5. 重启 WireGuard 服务使配置生效
             restartWireGuardService()
-            
+
             ClientConfigResult(
                 success = true,
                 clientName = clientName,
@@ -240,7 +240,7 @@ class WireGuardService(
             )
         }
     }
-    
+
     /**
      * 生成 WireGuard 密钥对
      */
@@ -251,17 +251,17 @@ class WireGuardService(
             throw RuntimeException("生成私钥失败: ${privateKeyResult.errMsg}")
         }
         val privateKey = privateKeyResult.output.trim()
-        
+
         // 从私钥生成公钥
-        val publicKeyResult = commandExecutor.runCommand("echo '$privateKey' | wg pubkey", 5)
+        val publicKeyResult = commandExecutor.runCommand("echo '$privateKey' | sudo wg pubkey", 5)
         if (publicKeyResult.exitCode != 0) {
             throw RuntimeException("生成公钥失败: ${publicKeyResult.errMsg}")
         }
         val publicKey = publicKeyResult.output.trim()
-        
+
         return KeyPair(privateKey, publicKey)
     }
-    
+
     /**
      * 获取服务器端点（IP地址和端口）
      */
@@ -279,14 +279,14 @@ class WireGuardService(
                 "YOUR_SERVER_IP"
             }
         }
-        
+
         // 获取监听端口
         val interfaceConfig = getInterfaceConfig()
         val port = interfaceConfig.listenPort
-        
+
         return "$publicIp:$port"
     }
-    
+
     /**
      * 生成客户端配置文件
      */
@@ -300,12 +300,12 @@ class WireGuardService(
         return """
             # WireGuard 客户端配置 - $clientName
             # 生成时间: ${java.time.LocalDateTime.now()}
-            
+
             [Interface]
             PrivateKey = $privateKey
             Address = ${getNextClientIp()}
             DNS = 8.8.8.8, 1.1.1.1
-            
+
             [Peer]
             PublicKey = $serverPublicKey
             Endpoint = $serverEndpoint
@@ -313,14 +313,14 @@ class WireGuardService(
             PersistentKeepalive = 25
         """.trimIndent()
     }
-    
+
     /**
      * 获取下一个可用的客户端IP地址
      */
     private fun getNextClientIp(): String {
         val interfaceConfig = getInterfaceConfig()
         val existingIps = interfaceConfig.peers.flatMap { it.allowedIps }
-        
+
         // 简单的IP分配逻辑：从 10.0.0.2 开始递增
         var ipIndex = 2
         while (true) {
@@ -334,52 +334,52 @@ class WireGuardService(
             }
         }
     }
-    
+
     /**
      * 更新服务器配置文件
      */
     private fun updateServerConfig(clientPublicKey: String, allowedIps: String): UpdateResult {
         val interfaceConfig = getInterfaceConfig()
         val configPath = "/etc/wireguard/${interfaceConfig.interfaceName}.conf"
-        
+
         // 读取现有配置
-        val readResult = commandExecutor.runCommand("sudo cat $configPath", 5)
+        val readResult = commandExecutor.runCommand("cat $configPath", 5)
         if (readResult.exitCode != 0) {
             return UpdateResult(false, "读取配置文件失败: ${readResult.errMsg}")
         }
-        
+
         val existingConfig = readResult.output
-        
+
         // 添加新的Peer配置
         val newPeerConfig = """
-            
+
             [Peer]
             # 客户端: ${java.time.LocalDateTime.now()}
             PublicKey = $clientPublicKey
             AllowedIPs = $allowedIps
         """.trimIndent()
-        
+
         val updatedConfig = existingConfig + newPeerConfig
-        
+
         // 写入新配置
         val tempFile = "/tmp/wg_${System.currentTimeMillis()}.conf"
         val writeTempResult = commandExecutor.runCommand("echo '${updatedConfig.replace("'", "'\"'\"'")}' > $tempFile", 5)
         if (writeTempResult.exitCode != 0) {
             return UpdateResult(false, "创建临时文件失败: ${writeTempResult.errMsg}")
         }
-        
+
         // 复制到配置文件
-        val copyResult = commandExecutor.runCommand("sudo cp $tempFile $configPath", 5)
+        val copyResult = commandExecutor.runCommand("cp $tempFile $configPath", 5)
         if (copyResult.exitCode != 0) {
             return UpdateResult(false, "复制配置文件失败: ${copyResult.errMsg}")
         }
-        
+
         // 清理临时文件
         commandExecutor.runCommand("rm -f $tempFile", 5)
-        
+
         return UpdateResult(true, null)
     }
-    
+
     /**
      * 重启 WireGuard 服务
      */
@@ -388,7 +388,7 @@ class WireGuardService(
         commandExecutor.runCommand("sudo wg-quick down ${interfaceConfig.interfaceName}", 10)
         commandExecutor.runCommand("sudo wg-quick up ${interfaceConfig.interfaceName}", 10)
     }
-    
+
     /**
      * 生成二维码（简单实现）
      */
