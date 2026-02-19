@@ -1,5 +1,7 @@
 package com.leojay.simplewgad.service
 
+import com.leojay.simplewgad.model.InterfaceConfig
+import com.leojay.simplewgad.model.PeerInfo
 import com.leojay.simplewgad.model.WireGuardStatus
 import com.leojay.simplewgad.model.ServiceStatus
 import com.leojay.simplewgad.model.WgEntry
@@ -317,6 +319,7 @@ class WireGuardService(
     /**
      * 获取下一个可用的客户端IP地址
      */
+    //todo : 需要重写
     private fun getNextClientIp(): String {
         val interfaceConfig = getInterfaceConfig()
         val existingIps = interfaceConfig.peers.flatMap { it.allowedIps }
@@ -385,8 +388,8 @@ class WireGuardService(
      */
     private fun restartWireGuardService() {
         val interfaceConfig = getInterfaceConfig()
-        commandExecutor.runCommand("sudo wg-quick down ${interfaceConfig.interfaceName}", 10)
-        commandExecutor.runCommand("sudo wg-quick up ${interfaceConfig.interfaceName}", 10)
+        commandExecutor.runCommand("wg-quick down ${interfaceConfig.interfaceName}", 10)
+        commandExecutor.runCommand("wg-quick up ${interfaceConfig.interfaceName}", 10)
     }
 
     /**
@@ -408,29 +411,6 @@ data class ServerConfig(
     val systemInfo: SystemInfo?,
     val success: Boolean,
     val errorMessage: String? = null
-)
-
-/**
- * 接口配置数据类
- */
-data class InterfaceConfig(
-    val interfaceName: String,
-    val publicKey: String,
-    val listenPort: Int,
-    val peerCount: Int,
-    val peers: List<PeerInfo>
-)
-
-/**
- * 对等端信息数据类
- */
-data class PeerInfo(
-    val publicKey: String,
-    val endpoint: String,
-    val allowedIps: List<String>,
-    val latestHandshake: Long,
-    val transferRx: Long,
-    val transferTx: Long
 )
 
 /**
