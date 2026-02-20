@@ -1,7 +1,7 @@
 package com.leojay.simplewgad.service
 
 import com.leojay.simplewgad.model.InterfaceConfig
-import com.leojay.simplewgad.model.PeerInfo
+import com.leojay.simplewgad.model.PeerConfig
 import com.leojay.simplewgad.model.WireGuardStatus
 import com.leojay.simplewgad.model.ServiceStatus
 import com.leojay.simplewgad.model.WgEntry
@@ -104,7 +104,7 @@ class WireGuardService(
             listenPort = interfaceEntry?.listenPort ?: 0,
             peerCount = peerEntries.size,
             peers = peerEntries.map { peer ->
-                PeerInfo(
+                PeerConfig(
                     publicKey = peer.publicKey,
                     endpoint = peer.endpoint,
                     allowedIps = peer.allowedIps,

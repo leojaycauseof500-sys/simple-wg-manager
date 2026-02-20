@@ -1,5 +1,8 @@
 package com.leojay.simplewgad.model
 
+/**
+ * 通过 "wg show all dump"获取的实时状态
+ */
 sealed class WgEntry {
     // 5个字段：interface, private_key, public_key, listen_port, fwmark
     data class Interface(
