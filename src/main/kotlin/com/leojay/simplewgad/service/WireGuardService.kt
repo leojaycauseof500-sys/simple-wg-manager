@@ -1,19 +1,21 @@
 package com.leojay.simplewgad.service
 
 import com.leojay.simplewgad.model.InterfaceConfig
-import com.leojay.simplewgad.model.PeerConfig
 import com.leojay.simplewgad.model.WireGuardStatus
 import com.leojay.simplewgad.model.ServiceStatus
 import com.leojay.simplewgad.model.WgEntry
 import com.leojay.simplewgad.util.CommandExecutor
 import com.leojay.simplewgad.util.WgEntryParser
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
 class WireGuardService(
     private val commandExecutor: CommandExecutor,
-    private val wgEntryParser: WgEntryParser
+    private val wgEntryParser: WgEntryParser,
+    @Value("\${wg-manager.default.interface-name}") private val interfaceName : String,
+    @Value("\${wg-manager.default.server-public-key}") private val serverPublicKey : String,
 ) {
     private val logger = LoggerFactory.getLogger(WireGuardService::class.java)
 
@@ -54,9 +56,12 @@ class WireGuardService(
      * 获取 WireGuard 接口统计信息
      */
     fun getWireGuardStatistics(): List<WgEntry> {
-        return wgEntryParser.parseWgDump(getWireGuardDetails().split('\n'))
+        return wgEntryParser.parseWgDump(getWireGuardDetails().split('\n')).getOrThrow()
     }
 
+    fun getInterfaceConfig() = InterfaceConfig(
+        "", 0, emptyList(), null, emptyList()
+    )
     /**
      * 获取服务器配置信息
      */
@@ -66,7 +71,7 @@ class WireGuardService(
             val interfaceConfig = getInterfaceConfig()
 
             // 获取配置文件内容
-            val configFileContent = getConfigFileContent(interfaceConfig.interfaceName)
+            val configFileContent = getConfigFileContent("wg0")
 
             // 获取系统信息
             val systemInfo = getSystemInfo()
@@ -92,29 +97,28 @@ class WireGuardService(
     /**
      * 获取接口配置信息
      */
-    private fun getInterfaceConfig(): InterfaceConfig {
-        val wgEntries = getWireGuardStatistics()
-
-        val interfaceEntry = wgEntries.find { it is WgEntry.Interface } as? WgEntry.Interface
-        val peerEntries = wgEntries.filterIsInstance<WgEntry.Peer>()
-
-        return InterfaceConfig(
-            interfaceName = interfaceEntry?.name ?: "unknown",
-            publicKey = interfaceEntry?.publicKey ?: "unknown",
-            listenPort = interfaceEntry?.listenPort ?: 0,
-            peerCount = peerEntries.size,
-            peers = peerEntries.map { peer ->
-                PeerConfig(
-                    publicKey = peer.publicKey,
-                    endpoint = peer.endpoint,
-                    allowedIps = peer.allowedIps,
-                    latestHandshake = peer.latestHandshake,
-                    transferRx = peer.transferRx,
-                    transferTx = peer.transferTx
-                )
-            }
-        )
-    }
+//    private fun getInterfaceConfig(): WgConfig.InterfaceConfig {
+//        val wgEntries = getWireGuardStatistics()
+//
+//        val interfaceEntry = wgEntries.find { it is WgEntry.Interface } as? WgEntry.Interface
+//        val peerEntries = wgEntries.filterIsInstance<WgEntry.Peer>()
+//
+//        return WgConfig.InterfaceConfig(
+//            interfaceName = interfaceEntry?.name ?: "unknown",
+//            privateKey = interfaceEntry?.publicKey ?: "unknown",
+//            listenPort = interfaceEntry?.listenPort ?: 0,
+//            peers = peerEntries.map { peer ->
+//                WgConfig.PeerConfig(
+//                    publicKey = peer.publicKey,
+//                    endpoint = peer.endpoint,
+//                    allowedIps = peer.allowedIps,
+//                    latestHandshake = peer.latestHandshake,
+//                    transferRx = peer.transferRx,
+//                    transferTx = peer.transferTx
+//                )
+//            }
+//        )
+//    }
 
     /**
      * 获取配置文件内容
@@ -198,7 +202,7 @@ class WireGuardService(
 
             // 2. 获取服务器接口信息
             val interfaceConfig = getInterfaceConfig()
-            val serverPublicKey = interfaceConfig.publicKey
+            val serverPublicKey = serverPublicKey
             val serverEndpoint = getServerEndpoint()
 
             // 3. 生成客户端配置
@@ -321,21 +325,22 @@ class WireGuardService(
      */
     //todo : 需要重写
     private fun getNextClientIp(): String {
-        val interfaceConfig = getInterfaceConfig()
-        val existingIps = interfaceConfig.peers.flatMap { it.allowedIps }
-
-        // 简单的IP分配逻辑：从 10.0.0.2 开始递增
-        var ipIndex = 2
-        while (true) {
-            val candidateIp = "10.0.0.$ipIndex/32"
-            if (!existingIps.contains(candidateIp)) {
-                return candidateIp.replace("/32", "")
-            }
-            ipIndex++
-            if (ipIndex > 254) {
-                throw RuntimeException("没有可用的IP地址")
-            }
-        }
+//        val interfaceConfig = getInterfaceConfig()
+//        val existingIps = interfaceConfig.peers.flatMap { it.allowedIps }
+//
+//        // 简单的IP分配逻辑：从 10.0.0.2 开始递增
+//        var ipIndex = 2
+//        while (true) {
+//            val candidateIp = "10.0.0.$ipIndex/32"
+//            if (!existingIps.contains(candidateIp)) {
+//                return candidateIp.replace("/32", "")
+//            }
+//            ipIndex++
+//            if (ipIndex > 254) {
+//                throw RuntimeException("没有可用的IP地址")
+//            }
+//        }
+        return "10.0.0.3"
     }
 
     /**
@@ -343,7 +348,7 @@ class WireGuardService(
      */
     private fun updateServerConfig(clientPublicKey: String, allowedIps: String): UpdateResult {
         val interfaceConfig = getInterfaceConfig()
-        val configPath = "/etc/wireguard/${interfaceConfig.interfaceName}.conf"
+        val configPath = "/etc/wireguard/${interfaceName}.conf"
 
         // 读取现有配置
         val readResult = commandExecutor.runCommand("cat $configPath", 5)
@@ -388,8 +393,8 @@ class WireGuardService(
      */
     private fun restartWireGuardService() {
         val interfaceConfig = getInterfaceConfig()
-        commandExecutor.runCommand("wg-quick down ${interfaceConfig.interfaceName}", 10)
-        commandExecutor.runCommand("wg-quick up ${interfaceConfig.interfaceName}", 10)
+        commandExecutor.runCommand("wg-quick down ${interfaceName}", 10)
+        commandExecutor.runCommand("wg-quick up ${interfaceName}", 10)
     }
 
     /**

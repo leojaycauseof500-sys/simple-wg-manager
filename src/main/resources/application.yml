@@ -13,4 +13,5 @@ logging:
 wg-manager:
   default:
     interface-name: wg0 #管理页面在启动时会去查找这个接口的信息
+    server-public-key: 123
 
