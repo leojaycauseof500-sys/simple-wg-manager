@@ -16,17 +16,26 @@ import java.nio.charset.StandardCharsets
 class ClientController(
     private val wireGuardService: WireGuardService
 ) {
-    
+
     @GetMapping("/clients")
     fun clientsPage(model: Model): String {
         // 获取当前客户端列表
-        val serverConfig = wireGuardService.getServerConfig()
-        model.addAttribute("serverConfig", serverConfig)
-        model.addAttribute("hasConfig", serverConfig.success)
-        
+        val serverConfigResult = wireGuardService.getServerConfig()
+
+        serverConfigResult.fold(
+            onSuccess = { serverConfig ->
+                model.addAttribute("serverConfig", serverConfig)
+                model.addAttribute("hasConfig", true)
+            },
+            onFailure = { exception ->
+                model.addAttribute("hasConfig", false)
+                model.addAttribute("errorMessage", exception.message)
+            }
+        )
+
         return "clients"
     }
-    
+
     @PostMapping("/clients/add")
     fun addClient(
         @RequestParam("clientName") clientName: String,
@@ -34,21 +43,24 @@ class ClientController(
         model: Model
     ): String {
         val result = wireGuardService.addClient(clientName, allowedIps)
-        
-        if (result.success) {
-            model.addAttribute("success", true)
-            model.addAttribute("clientName", result.clientName)
-            model.addAttribute("clientConfig", result.clientConfig)
-            model.addAttribute("publicKey", result.publicKey)
-            model.addAttribute("privateKey", result.privateKey)
-        } else {
-            model.addAttribute("success", false)
-            model.addAttribute("errorMessage", result.errorMessage)
-        }
-        
+
+        result.fold(
+            onSuccess = { clientConfig ->
+                model.addAttribute("success", true)
+                model.addAttribute("clientName", clientConfig.clientName)
+                model.addAttribute("clientConfig", clientConfig.clientConfig)
+                model.addAttribute("publicKey", clientConfig.publicKey)
+                model.addAttribute("privateKey", clientConfig.privateKey)
+            },
+            onFailure = { exception ->
+                model.addAttribute("success", false)
+                model.addAttribute("errorMessage", exception.message)
+            }
+        )
+
         return "clients"
     }
-    
+
     @GetMapping("/clients/download")
     fun downloadClientConfig(
         @RequestParam("clientName") clientName: String,
@@ -56,12 +68,12 @@ class ClientController(
     ): ResponseEntity<ByteArray> {
         val encodedClientName = URLEncoder.encode(clientName, StandardCharsets.UTF_8.toString())
         val filename = "wireguard-$encodedClientName.conf"
-        
+
         val headers = HttpHeaders().apply {
             add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             add(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
         }
-        
+
         return ResponseEntity.ok()
             .headers(headers)
             .body(config.toByteArray(StandardCharsets.UTF_8))

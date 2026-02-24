@@ -9,20 +9,23 @@ import org.springframework.web.bind.annotation.GetMapping
 class ConfigController(
     private val wireGuardService: WireGuardService
 ) {
-    
+
     @GetMapping("/config")
     fun configPage(model: Model): String {
         // 获取服务器配置信息
-        val serverConfig = wireGuardService.getServerConfig()
-        
-        model.addAttribute("serverConfig", serverConfig)
-        model.addAttribute("hasConfig", serverConfig.success)
-        
-        // 如果配置获取失败，添加错误信息
-        if (!serverConfig.success) {
-            model.addAttribute("errorMessage", serverConfig.errorMessage ?: "无法获取服务器配置")
-        }
-        
+        val serverConfigResult = wireGuardService.getServerConfig()
+
+        serverConfigResult.fold(
+            onSuccess = { serverConfig ->
+                model.addAttribute("serverConfig", serverConfig)
+                model.addAttribute("hasConfig", true)
+            },
+            onFailure = { exception ->
+                model.addAttribute("hasConfig", false)
+                model.addAttribute("errorMessage", exception.message)
+            }
+        )
+
         return "config"
     }
 }

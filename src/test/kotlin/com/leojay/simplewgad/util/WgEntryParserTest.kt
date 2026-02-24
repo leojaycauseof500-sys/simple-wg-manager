@@ -5,14 +5,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 
-@SpringBootTest
 class WgEntryParserTest {
 
-    @Autowired
-    private lateinit var wgEntryParser: WgEntryParser
+    private var wgEntryParser: WgEntryParser = WgEntryParser()
 
     @Nested
     @DisplayName("parseWgDump 方法测试")
