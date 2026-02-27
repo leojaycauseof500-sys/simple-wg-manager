@@ -164,13 +164,13 @@
                             </span>
                         </h3>
                         <div class="client-header-actions">
-                            <md-icon-button class="edit-name-btn" th:onclick="'editClientName(' + ${stat.index} + ')'">
+                            <md-icon-button class="edit-name-btn" th:data-index="${stat.index}" onclick="editClientNameFromButton(this)">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button class="save-name-btn" style="display: none;" th:onclick="'saveClientName(' + ${stat.index} + ', \'' + ${client.clientMeta.publicKey} + '\')'">
+                            <md-icon-button class="save-name-btn" style="display: none;" th:data-public-key="${client.clientMeta.publicKey}" th:data-index="${stat.index}" onclick="saveClientNameFromButton(this)">
                                 <md-icon>save</md-icon>
                             </md-icon-button>
-                            <md-icon-button class="cancel-name-btn" style="display: none;" th:onclick="'cancelClientName(' + ${stat.index} + ')'">
+                            <md-icon-button class="cancel-name-btn" style="display: none;" th:data-index="${stat.index}" onclick="cancelClientNameFromButton(this)">
                                 <md-icon>close</md-icon>
                             </md-icon-button>
                         </div>
@@ -315,6 +315,12 @@ PersistentKeepalive = 25
         alert('配置已复制到剪贴板！');
     }
 
+    // 编辑客户端名称（从按钮元素获取数据）
+    function editClientNameFromButton(button) {
+        const index = button.dataset.index;
+        editClientName(index);
+    }
+
     // 编辑客户端名称
     function editClientName(index) {
         const display = document.getElementById('name-display-' + index);
@@ -335,6 +341,13 @@ PersistentKeepalive = 25
         if (savedName) {
             document.getElementById('name-input-' + index).value = savedName;
         }
+    }
+
+    // 保存客户端名称（从按钮元素获取数据）
+    function saveClientNameFromButton(button) {
+        const index = button.dataset.index;
+        const publicKey = button.dataset.publicKey;
+        saveClientName(index, publicKey);
     }
 
     // 保存客户端名称
@@ -358,6 +371,12 @@ PersistentKeepalive = 25
         } else {
             alert('名称不能为空');
         }
+    }
+
+    // 取消编辑客户端名称（从按钮元素获取数据）
+    function cancelClientNameFromButton(button) {
+        const index = button.dataset.index;
+        cancelClientName(index);
     }
 
     // 取消编辑客户端名称
