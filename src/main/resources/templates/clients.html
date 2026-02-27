@@ -137,14 +137,24 @@
         </div>
 
         <!-- 现有客户端列表 -->
-        <div class="clients-list" th:if="${hasConfig}">
+        <div class="clients-list" th:if="${hasClients}">
             <h2 class="section-title">现有客户端</h2>
+            <div th:if="${statsError}" class="error-card">
+                <md-icon class="error-icon">warning</md-icon>
+                <div class="error-content">
+                    <h3>实时统计信息获取失败</h3>
+                    <p th:text="${statsError}">无法获取实时流量数据，仅显示客户端基本信息。</p>
+                </div>
+            </div>
             <div class="clients-grid">
-                <div class="client-card" th:each="peer, stat : ${serverConfig.interfaceConfig.peers}" th:data-public-key="${peer.publicKey}">
+                <div class="client-card" th:each="client, stat : ${clients}" th:data-public-key="${client.clientMeta.publicKey}" th:data-uuid="${client.uuid}">
                     <div class="client-header">
                         <md-icon>devices</md-icon>
                         <h3>
-                            <span class="client-name-display" th:id="'name-display-' + ${stat.index}">客户端 #<span th:text="${stat.index + 1}">1</span></span>
+                            <span class="client-name-display" th:id="'name-display-' + ${stat.index}">
+                                <span th:text="${client.clientMeta.name}">客户端名称</span>
+                                <small style="color: #666; font-size: 12px; margin-left: 8px;">UUID: <span th:text="${client.uuid}">uuid</span></small>
+                            </span>
                             <span class="client-name-edit" style="display: none;" th:id="'name-edit-' + ${stat.index}">
                                 <md-outlined-text-field
                                     th:id="'name-input-' + ${stat.index}"
@@ -157,7 +167,7 @@
                             <md-icon-button class="edit-name-btn" th:onclick="'editClientName(' + ${stat.index} + ')'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button class="save-name-btn" style="display: none;">
+                            <md-icon-button class="save-name-btn" style="display: none;" th:onclick="'saveClientName(' + ${stat.index} + ', \'' + ${client.clientMeta.publicKey} + '\')'">
                                 <md-icon>save</md-icon>
                             </md-icon-button>
                             <md-icon-button class="cancel-name-btn" style="display: none;" th:onclick="'cancelClientName(' + ${stat.index} + ')'">
@@ -167,37 +177,67 @@
                     </div>
                     <div class="client-content">
                         <div class="client-row">
+                            <span class="client-label">UUID:</span>
+                            <span class="client-value config-code-small" th:text="${client.uuid}">uuid</span>
+                        </div>
+                        <div class="client-row">
                             <span class="client-label">名称:</span>
-                            <span class="client-value" th:id="'client-name-' + ${stat.index}">未命名</span>
+                            <span class="client-value" th:id="'client-name-' + ${stat.index}" th:text="${client.clientMeta.name}">客户端名称</span>
                         </div>
                         <div class="client-row">
                             <span class="client-label">公钥:</span>
-                            <span class="client-value config-code-small" th:text="${peer.publicKey}">PEER_PUBLIC_KEY</span>
+                            <span class="client-value config-code-small" th:text="${client.clientMeta.publicKey}">PEER_PUBLIC_KEY</span>
                         </div>
                         <div class="client-row">
-                            <span class="client-label">端点:</span>
-                            <span class="client-value" th:text="${peer.endpoint ?: '未连接'}">192.168.1.100:51820</span>
+                            <span class="client-label">地址:</span>
+                            <span class="client-value" th:text="${client.clientMeta.address}">10.0.0.2/32</span>
                         </div>
                         <div class="client-row">
-                            <span class="client-label">允许IP:</span>
-                            <span class="client-value" th:text="${#strings.listJoin(peer.allowedIps, ', ')}">10.0.0.2/32</span>
-                        </div>
-                        <div class="client-row">
-                            <span class="client-label">最后握手:</span>
-                            <span class="client-value" th:text="${peer.latestHandshake > 0 ? #dates.format(#dates.createFromTimestamp(peer.latestHandshake * 1000), 'yyyy-MM-dd HH:mm:ss') : '从未'}">
-                                2024-01-01 12:00:00
-                            </span>
-                        </div>
-                        <div class="client-row">
-                            <span class="client-label">传输统计:</span>
+                            <span class="client-label">启用状态:</span>
                             <span class="client-value">
-                                接收: <span th:text="${#numbers.formatDecimal(peer.transferRx / 1024 / 1024, 1, 2)}">1.2</span> MB /
-                                发送: <span th:text="${#numbers.formatDecimal(peer.transferTx / 1024 / 1024, 1, 2)}">3.4</span> MB
+                                <md-icon th:if="${client.clientMeta.enabled}" style="color: #4caf50; vertical-align: middle;">check_circle</md-icon>
+                                <md-icon th:unless="${client.clientMeta.enabled}" style="color: #f44336; vertical-align: middle;">cancel</md-icon>
+                                <span th:text="${client.clientMeta.enabled ? '已启用' : '已禁用'}">已启用</span>
                             </span>
+                        </div>
+                        <!-- 实时统计信息 -->
+                        <div th:if="${client.realtimeStats != null}" class="realtime-stats">
+                            <div class="client-row">
+                                <span class="client-label">端点:</span>
+                                <span class="client-value" th:text="${client.realtimeStats.endpoint ?: '未连接'}">192.168.1.100:51820</span>
+                            </div>
+                            <div class="client-row">
+                                <span class="client-label">允许IP:</span>
+                                <span class="client-value" th:text="${#strings.listJoin(client.realtimeStats.allowedIps, ', ')}">10.0.0.2/32</span>
+                            </div>
+                            <div class="client-row">
+                                <span class="client-label">最后握手:</span>
+                                <span class="client-value" th:text="${client.realtimeStats.latestHandshake > 0 ? #dates.format(#dates.createFromTimestamp(client.realtimeStats.latestHandshake * 1000), 'yyyy-MM-dd HH:mm:ss') : '从未'}">
+                                    2024-01-01 12:00:00
+                                </span>
+                            </div>
+                            <div class="client-row">
+                                <span class="client-label">传输统计:</span>
+                                <span class="client-value">
+                                    接收: <span th:text="${#numbers.formatDecimal(client.realtimeStats.transferRx / 1024 / 1024, 1, 2)}">0</span> MB /
+                                    发送: <span th:text="${#numbers.formatDecimal(client.realtimeStats.transferTx / 1024 / 1024, 1, 2)}">0</span> MB
+                                </span>
+                            </div>
+                        </div>
+                        <div th:if="${client.realtimeStats == null}" class="realtime-stats">
+                            <div class="client-row">
+                                <span class="client-label">实时状态:</span>
+                                <span class="client-value" style="color: #f44336;">未连接或无统计信息</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+        <div th:unless="${hasClients}" class="empty-state">
+            <md-icon style="font-size: 48px; color: #ccc;">group_off</md-icon>
+            <h3>暂无客户端</h3>
+            <p>尚未添加任何客户端，请使用上方表单添加第一个客户端。</p>
         </div>
     </main>
 </div>
@@ -308,7 +348,10 @@ PersistentKeepalive = 25
 
             // 更新显示
             document.getElementById('client-name-' + index).textContent = name;
-            document.getElementById('name-display-' + index).innerHTML = name;
+            // 更新显示区域，保持UUID显示
+            const uuid = document.querySelectorAll('.client-card')[index].dataset.uuid;
+            document.getElementById('name-display-' + index).innerHTML = 
+                name + '<small style="color: #666; font-size: 12px; margin-left: 8px;">UUID: ' + uuid + '</small>';
 
             // 切换回显示模式
             cancelClientName(index);
@@ -586,6 +629,32 @@ PersistentKeepalive = 25
     .error-content p {
         margin: 0 0 16px 0;
         color: #666;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        margin-top: 32px;
+    }
+
+    .empty-state h3 {
+        margin: 16px 0 8px;
+        color: #333;
+        font-size: 20px;
+    }
+
+    .empty-state p {
+        color: #666;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .realtime-stats {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px dashed #e0e0e0;
     }
 </style>
 </body>
