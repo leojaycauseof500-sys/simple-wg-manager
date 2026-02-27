@@ -8,7 +8,7 @@ data class InterfaceConfig(
     val listenPort: Int,
     val address: List<String>,
     val dns: List<String>? = null,
-    val peers: List<PeerConfig>,
+    val peers: MutableList<PeerConfig> = mutableListOf(),
 )
 
 data class PeerConfig(

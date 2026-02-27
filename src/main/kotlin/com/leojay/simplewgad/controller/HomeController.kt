@@ -5,8 +5,6 @@ import com.leojay.simplewgad.service.WireGuardService
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.ResponseBody
 
 @Controller
 class HomeController(
@@ -42,26 +40,4 @@ class HomeController(
         )
     }
 
-    /**
-     * 重新检查状态的 API 端点
-     */
-    @PostMapping("/api/recheck-status")
-    @ResponseBody
-    fun recheckStatus(): Map<String, Any> {
-        val recheckResult = startupWireGuardCheck.recheckStatus()
-
-        return mapOf(
-            "success" to recheckResult.success,
-            "isRunning" to recheckResult.isRunning,
-            "statusChanged" to recheckResult.statusChanged,
-            "errorMessage" to recheckResult.errorMessage,
-            "status" to recheckResult.status?.let { status ->
-                mapOf(
-                    "totalStatus" to status.totalStatus.name,
-                    "isProcessRunning" to status.isProcessRunning,
-                    "interfaceName" to status.interfaceName
-                )
-            }
-        )
-    }
 }

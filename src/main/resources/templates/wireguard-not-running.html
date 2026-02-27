@@ -1,139 +1,513 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WireGuard Not Running</title>
-    <link rel="stylesheet" href="/css/login.css">
+    <title th:text="#{home.page.title}">WireGuard 管理面板</title>
+    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <script type="importmap">
+        {
+          "imports": {
+            "@material/web/": "https://esm.run/@material/web/"
+          }
+        }
+    </script>
+    <script type="module">
+        import '@material/web/all.js';
+        import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+
+        document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    </script>
     <style>
-        .warning-container {
-            max-width: 600px;
-            margin: 100px auto;
+        .error-container {
+            max-width: 800px;
+            margin: 60px auto;
             padding: 40px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
-        .warning-icon {
-            font-size: 64px;
+
+        .error-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .error-icon {
+            font-size: 80px;
             color: #ff9800;
             margin-bottom: 20px;
         }
-        .status-details {
-            text-align: left;
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+
+        .error-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
         }
+
+        .error-subtitle {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e9ecef;
+        }
+
+        .status-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-card-title md-icon {
+            font-size: 20px;
+        }
+
         .status-item {
-            margin: 10px 0;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
         }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
         .status-label {
-            font-weight: bold;
+            font-size: 14px;
+            color: #6c757d;
         }
+
         .status-value {
-            color: #333;
+            font-size: 14px;
+            font-weight: 500;
         }
+
         .status-running {
             color: #4caf50;
         }
+
         .status-stopped {
             color: #ff9800;
         }
+
         .status-error {
             color: #f44336;
         }
-        .action-buttons {
-            margin-top: 30px;
+
+        .status-unknown {
+            color: #9e9e9e;
+        }
+
+        .startup-info {
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 30px;
+        }
+
+        .startup-info-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 8px;
             display: flex;
-            gap: 15px;
-            justify-content: center;
+            align-items: center;
+            gap: 8px;
         }
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.3s;
+
+        .startup-info-content {
+            font-size: 14px;
+            color: #388e3c;
+            line-height: 1.5;
         }
-        .btn-primary {
-            background: #2196f3;
-            color: white;
+
+        .action-section {
+            margin-top: 40px;
         }
-        .btn-primary:hover {
-            background: #0d8bf2;
-        }
-        .btn-secondary {
-            background: #f5f5f5;
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
             color: #333;
+            margin-bottom: 20px;
         }
-        .btn-secondary:hover {
-            background: #e0e0e0;
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .command-section {
+            margin-top: 40px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .command-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .command-code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        .command-help {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .troubleshooting {
+            margin-top: 40px;
+            padding: 24px;
+            background: #fff3e0;
+            border: 1px solid #ffe0b2;
+            border-radius: 12px;
+        }
+
+        .troubleshooting-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e65100;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .troubleshooting-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .troubleshooting-item {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #5d4037;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .troubleshooting-item md-icon {
+            color: #ff9800;
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .error-container {
+                margin: 20px;
+                padding: 24px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons md-filled-button,
+            .action-buttons md-outlined-button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="warning-container">
-        <div class="warning-icon">⚠️</div>
-        <h1>WireGuard Service Not Running</h1>
-        <p>The WireGuard VPN service is currently not running. Some features may be unavailable.</p>
-        
-        <div class="status-details">
-            <div class="status-item">
-                <span class="status-label">Overall Status:</span>
-                <span class="status-value" th:classappend="${status.totalStatus == 'RUNNING'} ? 'status-running' : 
-                    (${status.totalStatus == 'STOPPED'} ? 'status-stopped' : 'status-error')">
-                    [[${status.totalStatus}]]
-                </span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Kernel Module:</span>
-                <span class="status-value" th:classappend="${status.isKernelModuleLoaded} ? 'status-running' : 'status-error'">
-                    [[${status.isKernelModuleLoaded} ? 'Loaded' : 'Not Loaded']]
-                </span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Process Running:</span>
-                <span class="status-value" th:classappend="${status.isProcessRunning} ? 'status-running' : 'status-stopped'">
-                    [[${status.isProcessRunning} ? 'Running' : 'Stopped']]
-                </span>
-            </div>
-            <div class="status-item" th:if="${status.interfaceName}">
-                <span class="status-label">Interface:</span>
-                <span class="status-value">[[${status.interfaceName}]]</span>
-            </div>
-            <div class="status-item" th:unless="${status.interfaceName}">
-                <span class="status-label">Interface:</span>
-                <span class="status-value">Not Found</span>
-            </div>
+<!-- 顶部导航栏 -->
+<header class="app-header">
+    <div class="header-left">
+        <div class="logo">
+            <span class="material-symbols-outlined logo-icon">vpn_key</span>
+            <span class="logo-text">WireGuard</span>
         </div>
-        
-        <div th:if="${isStartupCheck}">
-            <p><small>This status was checked at application startup: 
-                <span th:classappend="${startupStatus} ? 'status-running' : 'status-stopped'">
-                    [[${startupStatus} ? 'WireGuard was running' : 'WireGuard was not running']]
-                </span>
-            </small></p>
-        </div>
-        
-        <div class="action-buttons">
-            <button class="btn btn-primary" onclick="location.reload()">Re-check Status</button>
-            <button class="btn btn-secondary" onclick="window.location.href='/login'">Go to Login</button>
-        </div>
-        
-        <div style="margin-top: 30px; font-size: 14px; color: #666;">
-            <p>To start WireGuard, you can run:</p>
-            <code style="display: block; background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                sudo wg-quick up wg0
-            </code>
-            <p>Replace "wg0" with your interface name if different.</p>
-        </div>
+        <h1 class="app-title">服务状态</h1>
     </div>
+
+    <div class="header-right">
+        <!-- 返回首页按钮 -->
+        <md-text-button href="/">
+            <md-icon slot="icon">home</md-icon>
+            返回首页
+        </md-text-button>
+    </div>
+</header>
+
+<!-- 主内容区域 -->
+<div class="main-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <md-list>
+                <md-list-item type="button" href="/">
+                    <md-icon slot="start">dashboard</md-icon>
+                    <div slot="headline">仪表板</div>
+                </md-list-item>
+                <md-list-item type="button" href="/clients">
+                    <md-icon slot="start">group</md-icon>
+                    <div slot="headline">客户端管理</div>
+                </md-list-item>
+                <md-list-item type="button" href="/config">
+                    <md-icon slot="start">settings</md-icon>
+                    <div slot="headline">服务器配置</div>
+                </md-list-item>
+                <md-list-item type="button">
+                    <md-icon slot="start">monitoring</md-icon>
+                    <div slot="headline">流量监控</div>
+                </md-list-item>
+                <md-list-item type="button">
+                    <md-icon slot="start">history</md-icon>
+                    <div slot="headline">系统日志</div>
+                </md-list-item>
+            </md-list>
+        </nav>
+    </aside>
+
+    <!-- 内容区域 -->
+    <main class="content">
+        <div class="error-container">
+            <!-- 错误标题 -->
+            <div class="error-header">
+                <div class="error-icon">⚠️</div>
+                <h1 class="error-title">WireGuard 服务未运行</h1>
+                <p class="error-subtitle">
+                    WireGuard VPN 服务当前未运行。部分功能可能无法使用。
+                    请检查服务状态并尝试启动服务。
+                </p>
+            </div>
+
+            <!-- 启动检查信息 -->
+            <div th:if="${isStartupCheck}" class="startup-info">
+                <div class="startup-info-title">
+                    <md-icon>info</md-icon>
+                    启动时检查状态
+                </div>
+                <div class="startup-info-content">
+                    应用启动时检查：WireGuard
+                    <span th:classappend="${startupStatus} ? 'status-running' : 'status-stopped'">
+                            [[${startupStatus} ? '正在运行' : '未运行']]
+                        </span>
+                </div>
+            </div>
+
+            <!-- 状态网格 -->
+            <div class="status-grid">
+                <!-- 总体状态 -->
+                <div class="status-card">
+                    <div class="status-card-title">
+                        <md-icon>assessment</md-icon>
+                        总体状态
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">服务状态</span>
+                        <span class="status-value"
+                              th:classappend="${status.totalStatus == 'RUNNING'} ? 'status-running' :
+                                                (${status.totalStatus == 'STOPPED'} ? 'status-stopped' : 'status-error')">
+                                [[${status.totalStatus}]]
+                            </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">进程状态</span>
+                        <span class="status-value"
+                              th:classappend="${status.isProcessRunning} ? 'status-running' : 'status-stopped'">
+                                [[${status.isProcessRunning} ? '运行中' : '已停止']]
+                            </span>
+                    </div>
+                </div>
+
+                <!-- 接口信息 -->
+                <div class="status-card">
+                    <div class="status-card-title">
+                        <md-icon>settings_ethernet</md-icon>
+                        接口信息
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">接口名称</span>
+                        <span class="status-value" th:if="${status.interfaceName}" th:text="${status.interfaceName}">
+                                wg0
+                            </span>
+                        <span class="status-value status-unknown" th:unless="${status.interfaceName}">
+                                未找到
+                            </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">配置文件</span>
+                        <span class="status-value status-unknown">
+                                未检查
+                            </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-section">
+                <h3 class="action-title">操作</h3>
+                <div class="action-buttons">
+                    <md-filled-button onclick="location.reload()">
+                        <md-icon slot="icon">refresh</md-icon>
+                        重新检查状态
+                    </md-filled-button>
+                    <md-outlined-button onclick="window.location.href='/login'">
+                        <md-icon slot="icon">login</md-icon>
+                        前往登录
+                    </md-outlined-button>
+                    <md-outlined-button onclick="showStartCommands()">
+                        <md-icon slot="icon">terminal</md-icon>
+                        显示启动命令
+                    </md-outlined-button>
+                </div>
+            </div>
+
+            <!-- 启动命令 -->
+            <div class="command-section" id="startCommands" style="display: none;">
+                <div class="command-title">
+                    <md-icon>code</md-icon>
+                    启动 WireGuard 服务
+                </div>
+                <pre class="command-code">sudo wg-quick up wg0</pre>
+                <div class="command-help">
+                    将 "wg0" 替换为您的接口名称（如果不同）。
+                    此命令需要管理员权限。
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div class="command-title">
+                        <md-icon>code</md-icon>
+                        检查服务状态
+                    </div>
+                    <pre class="command-code">sudo wg show</pre>
+                    <div class="command-help">
+                        显示当前 WireGuard 接口和客户端状态。
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div class="command-title">
+                        <md-icon>code</md-icon>
+                        停止服务
+                    </div>
+                    <pre class="command-code">sudo wg-quick down wg0</pre>
+                    <div class="command-help">
+                        停止 WireGuard 服务。
+                    </div>
+                </div>
+            </div>
+
+            <!-- 故障排除 -->
+            <div class="troubleshooting">
+                <div class="troubleshooting-title">
+                    <md-icon>warning</md-icon>
+                    故障排除
+                </div>
+                <ul class="troubleshooting-list">
+                    <li class="troubleshooting-item">
+                        <md-icon>check_circle</md-icon>
+                        <span>确保 WireGuard 内核模块已加载：<code>lsmod | grep wireguard</code></span>
+                    </li>
+                    <li class="troubleshooting-item">
+                        <md-icon>check_circle</md-icon>
+                        <span>检查配置文件是否存在：<code>ls /etc/wireguard/</code></span>
+                    </li>
+                    <li class="troubleshooting-item">
+                        <md-icon>check_circle</md-icon>
+                        <span>验证配置文件语法：<code>sudo wg-quick strip wg0</code></span>
+                    </li>
+                    <li class="troubleshooting-item">
+                        <md-icon>check_circle</md-icon>
+                        <span>查看系统日志：<code>sudo journalctl -u wg-quick@wg0</code></span>
+                    </li>
+                    <li class="troubleshooting-item">
+                        <md-icon>check_circle</md-icon>
+                        <span>检查防火墙设置，确保 UDP 端口 51820 已开放</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 底部信息 -->
+<footer class="app-footer">
+    <p>© 2024 WireGuard 管理面板</p>
+    <p>版本 1.0.0</p>
+</footer>
+
+<script>
+    // 显示/隐藏启动命令
+    function showStartCommands() {
+        const commandsSection = document.getElementById('startCommands');
+        if (commandsSection.style.display === 'none') {
+            commandsSection.style.display = 'block';
+        } else {
+            commandsSection.style.display = 'none';
+        }
+    }
+
+    // 自动刷新页面（可选）
+    // setTimeout(() => {
+    //     location.reload();
+    // }, 30000); // 30秒后自动刷新
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 侧边栏导航点击事件
+        const navItems = document.querySelectorAll('.sidebar-nav md-list-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                navItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 如果状态是ERROR，显示更多错误信息
+        const statusElement = document.querySelector('.status-value');
+        if (statusElement && statusElement.textContent.includes('ERROR')) {
+            // 可以在这里添加额外的错误处理逻辑
+            console.log('WireGuard服务出现错误');
+        }
+    });
+</script>
 </body>
 </html>

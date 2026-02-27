@@ -1,71 +1,119 @@
 package com.leojay.simplewgad.service.impl
 
+import com.leojay.simplewgad.model.ClientMetaData
 import com.leojay.simplewgad.model.InterfaceConfig
 import com.leojay.simplewgad.model.PeerConfig
 import com.leojay.simplewgad.model.WireGuardStatus
 import com.leojay.simplewgad.model.ServiceStatus
 import com.leojay.simplewgad.model.WgEntry
+import com.leojay.simplewgad.repository.PeerMetaDataRepository
 import com.leojay.simplewgad.service.*
 import com.leojay.simplewgad.util.CommandExecutor
 import com.leojay.simplewgad.util.WgConfigEncoder
 import com.leojay.simplewgad.util.WgEntryParser
+import com.leojay.simplewgad.util.constant.Symbols
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.io.File
+import java.time.LocalDateTime
 
 @Service
 class WireGuardServiceImpl(
     private val commandExecutor: CommandExecutor,
     private val wgEntryParser: WgEntryParser,
     private val wgConfigEncoder: WgConfigEncoder,
+    private val peersMetaDataRepository: PeerMetaDataRepository,
+    @Value("\${wg-manager.peer-meta-data.path}") private val peerMetaDataPath: String,
     @Value("\${wg-manager.default.interface-name}") private val interfaceName: String,
-    @Value("\${wg-manager.default.server-public-key}") private val serverPublicKey: String,
+    @Value("\${wg-manager.default.server-private-key}") private val serverPrivateKey: String,
+    @Value("\${wg-manager.default.server-ip}") private val serverIP: String,
+    @Value("\${wg-manager.default.listen-port}") private val serverPort: String,
 ) : WireGuardService {
 
     private val logger = LoggerFactory.getLogger(WireGuardServiceImpl::class.java)
+    private val configPath = "$peerMetaDataPath$interfaceName.conf"
+    private val peersMetaData = peersMetaDataRepository.getMaskedData()
+    private val serverPublicKey = peersMetaData.server.publicKey
 
     override fun checkWireGuardStatus(): Result<WireGuardStatus> {
-        return runCatching {
-            val wgEntries = getWireGuardStatistics().getOrThrow()
-
-            WireGuardStatus(
-                isProcessRunning = checkProcessRunning(wgEntries),
-                interfaceName = getInterfaceName(wgEntries),
-                totalStatus = checkTotalStatus(wgEntries)
-            )
-        }
-    }
-
-    override fun getWireGuardDetails(): Result<String> {
-        return runCatching {
-            val result = commandExecutor.runCommand("wg show all dump", 10)
-            if (result.exitCode == 0) {
-                result.output
-            } else {
-                throw RuntimeException("Failed to get WireGuard details. Exit code: ${result.exitCode}")
+        return getWireGuardStatistics()
+            .recoverCatching { exception ->
+                // 第一次失败，尝试重启服务
+                restartWireGuardService().getOrThrow()
+                // 重启成功后，进行第二次尝试
+                getWireGuardStatistics().getOrThrow()
             }
-        }
+            .map { wgEntries ->
+                WireGuardStatus(
+                    isProcessRunning = checkProcessRunning(wgEntries),
+                    interfaceName = getInterfaceName(wgEntries),
+                    totalStatus = checkTotalStatus(wgEntries)
+                )
+            }
     }
 
-    override fun getWireGuardStatistics(): Result<List<WgEntry>> {
-        return runCatching {
-            val details = getWireGuardDetails().getOrThrow()
-            wgEntryParser.parseWgDump(details.split('\n')).getOrThrow()
+    override fun getWireGuardDetails(): Result<String> =
+        commandExecutor.runCommand("wg show all dump", 10).let { result ->
+            if (result.exitCode == 0) Result.success(result.output)
+            else Result.failure(RuntimeException("Exit code: ${result.exitCode}"))
         }
+
+
+    override fun getWireGuardStatistics(): Result<List<WgEntry>> =
+        getWireGuardDetails()
+            .map { it.split('\n') }
+            .mapCatching { lines ->
+                wgEntryParser.parseWgDump(lines).getOrThrow()
+            }
+
+    override fun getInterfaceConfig(): Result<InterfaceConfig> =
+        Result.success(configPath)
+            .mapCatching { path ->
+                readSpecificInterfaceConfig(path) ?: throw RuntimeException("Config not found at $path")
+            }
+
+    /**
+     * 读取特定接口的配置文件
+     */
+    private fun readSpecificInterfaceConfig(configPath : String): InterfaceConfig? {
+            logger.debug("尝试读取特定配置文件: $configPath")
+
+            val result = commandExecutor.runCommand("sudo cat $configPath", 5)
+        //todo 这里逻辑似乎有点问题 o_O?但能跑
+            if (result.exitCode != 0) {
+                //不存在配置文件就用元数据生成一份配置写入
+                return peersMetaDataRepository.getUnmaskedData().toInterfaceConfig().also {
+                    logger.warn("配置文件不存在或无法读取: ${result.errMsg}, 从元数据中重新生成一份$it")
+                    saveConfig(it)
+                }.copy(privateKey = "******")
+            }
+
+            val configContent = result.output
+            if (configContent.isBlank()) {
+                logger.warn("配置文件内容为空")
+                return null
+            }
+
+            logger.debug("成功读取配置文件内容，长度: ${configContent.length}")
+            return parseConfigContent(configContent)
     }
 
-    override fun getInterfaceConfig(): Result<InterfaceConfig> {
-        return runCatching {
-            // TODO: 实现从实际配置文件中解析接口配置
-            // 暂时返回默认配置
-            InterfaceConfig(
-                privateKey = "",
-                listenPort = 51820,
-                address = emptyList(),
-                peers = emptyList()
-            )
+    private fun parseConfigContent(configContent: String): InterfaceConfig {
+        logger.debug("开始解析配置内容")
+
+        val parseResult = wgEntryParser.parseConfigFile(configContent)
+        if (parseResult.isFailure) {
+            logger.error("解析配置文件失败: ${parseResult.exceptionOrNull()?.message}")
+            throw RuntimeException("解析配置文件失败: ${parseResult.exceptionOrNull()?.message}")
         }
+
+        val interfaceConfig = parseResult.getOrThrow()
+        logger.info("成功解析接口配置: peers=${interfaceConfig.peers.size}, address=${interfaceConfig.address}")
+
+        return interfaceConfig
     }
+
 
     override fun getServerConfig(): Result<ServerConfig> {
         return runCatching {
@@ -79,6 +127,7 @@ class WireGuardServiceImpl(
             val systemInfo = getSystemInfo().getOrThrow()
 
             ServerConfig(
+                interfaceName = interfaceName,
                 interfaceConfig = interfaceConfig,
                 configFileContent = configFileContent,
                 systemInfo = systemInfo
@@ -91,35 +140,37 @@ class WireGuardServiceImpl(
             require(clientName.isNotBlank()) { "客户端名称不能为空" }
             require(allowedIps.isNotBlank()) { "AllowedIPs 不能为空" }
 
-            // 1. 生成客户端公私钥对
             val keyPair = generateKeyPair().getOrThrow()
 
-            // 2. 获取服务器端点
-            val serverEndpoint = getServerEndpoint().getOrThrow()
-
-            // 3. 生成客户端配置
             val clientConfig = wgConfigEncoder.generateClientConfig(
                 clientName = clientName,
                 privateKey = keyPair.privateKey,
                 serverPublicKey = serverPublicKey,
-                serverEndpoint = serverEndpoint,
+                serverEndpoint = getServerEndpoint().getOrThrow(),
                 allowedIps = allowedIps,
-                dnsServers = listOf("8.8.8.8", "1.1.1.1")
+                dnsServers = null
             ).getOrThrow()
 
-            // 4. 更新服务器配置文件
-            val newPeer = PeerConfig(
-                publicKey = keyPair.publicKey,
-                allowedIPs = listOf(allowedIps)
+            val interfaceConfig = getInterfaceConfig().getOrThrow().apply {
+                peers.add(PeerConfig(
+                    publicKey = keyPair.publicKey,
+                    presharedKey = null,
+                    allowedIPs = allowedIps.split(Symbols.COMMA)
+                ))
+            }
+            saveConfig(interfaceConfig)
+
+
+            peersMetaDataRepository.addClientMetaData(
+                ClientMetaData(
+                    name = clientName,
+                    privateKey = keyPair.privateKey,
+                    publicKey = keyPair.publicKey,
+                    address = allowedIps,
+                    enabled = true
+                )
             )
-
-            val existingConfig = getConfigFileContent(interfaceName).getOrThrow()
-            val updatedConfig = wgConfigEncoder.updateServerConfig(existingConfig, newPeer).getOrThrow()
-
-            // 5. 写入新配置
-            writeConfigFile(interfaceName, updatedConfig).getOrThrow()
-
-            // 6. 重启服务使配置生效
+            // 重启服务使配置生效
             restartWireGuardService().getOrThrow()
 
             ClientConfigResult(
@@ -133,14 +184,18 @@ class WireGuardServiceImpl(
 
     override fun restartWireGuardService(): Result<Unit> {
         return runCatching {
-            commandExecutor.runCommand("wg-quick down $interfaceName", 10)
-            commandExecutor.runCommand("wg-quick up $interfaceName", 10)
+            //如果没有配置文件，从元数据读取一份再保存
+            readSpecificInterfaceConfig(configPath) ?: run {
+                saveConfig(peersMetaDataRepository.getUnmaskedData().toInterfaceConfig())
+            }
+
+            commandExecutor.runCommand("wg-quick down $configPath", 10)
+            commandExecutor.runCommand("wg-quick up $configPath", 10)
         }
     }
 
     override fun getConfigFileContent(interfaceName: String): Result<String> {
         return runCatching {
-            val configPath = "/etc/wireguard/$interfaceName.conf"
             val result = commandExecutor.runCommand("sudo cat $configPath", 5)
 
             if (result.exitCode == 0) {
@@ -178,6 +233,12 @@ class WireGuardServiceImpl(
         }
     }
 
+    override fun saveConfig(interfaceConfig: InterfaceConfig): Result<Unit> {
+        return runCatching {
+            val updatedConfig = wgConfigEncoder.encodeToConfig(interfaceConfig).getOrThrow()
+            writeConfigFile(interfaceName, updatedConfig).getOrThrow()
+        }
+    }
     // ============ 私有方法 ============
 
     private fun checkProcessRunning(wgEntries: List<WgEntry>): Boolean {
@@ -220,50 +281,26 @@ class WireGuardServiceImpl(
 
     private fun getServerEndpoint(): Result<String> {
         return runCatching {
-            // 尝试获取公网IP
-            val publicIpResult = commandExecutor.runCommand("curl -s ifconfig.me", 10)
-            val publicIp = if (publicIpResult.exitCode == 0 && publicIpResult.output.isNotBlank()) {
-                publicIpResult.output.trim()
-            } else {
-                // 如果获取公网IP失败，使用本地IP
-                val localIpResult = commandExecutor.runCommand("hostname -I | awk '{print \$1}'", 5)
-                if (localIpResult.exitCode == 0 && localIpResult.output.isNotBlank()) {
-                    localIpResult.output.trim()
-                } else {
-                    "YOUR_SERVER_IP"
-                }
-            }
-
-            // 获取监听端口
-            val interfaceConfig = getInterfaceConfig().getOrThrow()
-            val port = interfaceConfig.listenPort
-
-            "$publicIp:$port"
+            "$serverIP:$serverPort"
         }
     }
 
-    private fun writeConfigFile(interfaceName: String, config: String): Result<Unit> {
+    private fun writeConfigFile(interfaceName: String, configContent: String): Result<Unit> {
         return runCatching {
-            val configPath = "/etc/wireguard/$interfaceName.conf"
-            val tempFile = "/tmp/wg_${System.currentTimeMillis()}.conf"
+            val configPath = "$peerMetaDataPath$interfaceName.conf"
+            val backupPath = "$peerMetaDataPath$interfaceName-${LocalDateTime.now()}.conf.bak"
 
-            // 写入临时文件
-            val writeResult = commandExecutor.runCommand("echo '${config.replace("'", "'\"'\"'")}' > $tempFile", 5)
-            if (writeResult.exitCode != 0) {
-                throw RuntimeException("创建临时文件失败: ${writeResult.errMsg}")
+            val configFile = File(configPath).apply {
+                parentFile?.mkdirs()
+                if (!exists()) createNewFile()
+            }
+            //备份
+            File(backupPath).let {
+                if (!it.exists()) it.createNewFile()
+                it.writeText(configFile.readText())
             }
 
-            // 复制到配置文件
-            val copyResult = commandExecutor.runCommand("sudo cp $tempFile $configPath", 5)
-            if (copyResult.exitCode != 0) {
-                throw RuntimeException("复制配置文件失败: ${copyResult.errMsg}")
-            }
-
-            // 设置权限
-            commandExecutor.runCommand("sudo chmod 600 $configPath", 5)
-
-            // 清理临时文件
-            commandExecutor.runCommand("rm -f $tempFile", 5)
+            configFile.writeText(configContent)
         }
     }
 }

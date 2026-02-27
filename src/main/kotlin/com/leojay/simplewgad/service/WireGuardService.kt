@@ -50,12 +50,18 @@ interface WireGuardService {
      * 获取系统信息
      */
     fun getSystemInfo(): Result<SystemInfo>
+
+    /**
+     * 应用配置
+     */
+    fun saveConfig(interfaceConfig: InterfaceConfig): Result<Unit>
 }
 
 /**
  * 服务器配置数据类
  */
 data class ServerConfig(
+    val interfaceName: String,
     val interfaceConfig: InterfaceConfig,
     val configFileContent: String?,
     val systemInfo: SystemInfo

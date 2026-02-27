@@ -1,7 +1,7 @@
 package com.leojay.simplewgad.component
 
 import com.leojay.simplewgad.model.ServiceStatus
-import com.leojay.simplewgad.model.WireGuardStatus
+import com.leojay.simplewgad.repository.PeerMetaDataRepository
 import com.leojay.simplewgad.service.WireGuardService
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class StartupWireGuardCheck(
-    private val wireGuardService: WireGuardService
+    private val wireGuardService: WireGuardService,
+    private val peerMetaDataRepository: PeerMetaDataRepository
 ) {
     private val logger = LoggerFactory.getLogger(StartupWireGuardCheck::class.java)
 
@@ -64,39 +65,13 @@ class StartupWireGuardCheck(
     /**
      * 重新检查 WireGuard 状态
      */
-    fun recheckStatus(): RecheckResult {
-        logger.info("Rechecking WireGuard status...")
-
-        val statusResult = wireGuardService.checkWireGuardStatus()
-
-        return statusResult.fold(
-            onSuccess = { status ->
-                val wasRunning = isWireGuardRunning
-                isWireGuardRunning = status.totalStatus == ServiceStatus.RUNNING
-                startupErrorMessage = null
-
-                logger.info("Recheck completed. Status: ${status.totalStatus}, Running: $isWireGuardRunning")
-
-                RecheckResult(
-                    success = true,
-                    isRunning = isWireGuardRunning,
-                    status = status,
-                    statusChanged = wasRunning != isWireGuardRunning
-                )
-            },
-            onFailure = { exception ->
-                startupErrorMessage = exception.message ?: "Unknown error"
-                logger.error("Recheck failed: ${exception.message}", exception)
-
-                RecheckResult(
-                    success = false,
-                    isRunning = false,
-                    errorMessage = exception.message,
-                    statusChanged = false
-                )
-            }
-        )
-    }
+    //todo 二次检查先注释掉，后续需要再重写
+//    fun recheckStatus(): RecheckResult {
+//        logger.info("Rechecking WireGuard status...")
+//
+//        val statusResult = wireGuardService.checkWireGuardStatus()
+//
+//    }
 }
 
 /**
@@ -108,13 +83,4 @@ data class StartupCheckInfo(
     val errorMessage: String?
 )
 
-/**
- * 重新检查结果
- */
-data class RecheckResult(
-    val success: Boolean,
-    val isRunning: Boolean,
-    val status: WireGuardStatus? = null,
-    val errorMessage: String? = null,
-    val statusChanged: Boolean
-)
+

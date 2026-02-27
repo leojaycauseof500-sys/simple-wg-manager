@@ -52,7 +52,6 @@
 <root level="INFO">
     <appender-ref ref="CONSOLE"/>
     <appender-ref ref="FILE"/>
-    <!-- 如果需要 JSON 日志，取消注释下面一行 -->
     <!-- <appender-ref ref="JSON_FILE"/> -->
 </root>
 

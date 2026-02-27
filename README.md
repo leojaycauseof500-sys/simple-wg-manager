@@ -16,7 +16,6 @@
 - Java 17+
 - Spring Boot 3.x
 - WireGuard 已安装
-- Linux 系统（支持 systemd）
 
 ## 安装与配置
 
@@ -44,54 +43,14 @@ sudo visudo
 # 将 'yourusername' 替换为实际运行应用的用户名
 yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg show
 yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg-quick *
-yourusername ALL=(ALL) NOPASSWD: /usr/bin/ip link show type wireguard
-yourusername ALL=(ALL) NOPASSWD: /usr/bin/ip -o link show type wireguard
-yourusername ALL=(ALL) NOPASSWD: /bin/lsmod
-yourusername ALL=(ALL) NOPASSWD: /usr/bin/pgrep -x wg-quick
+yourusername ALL=(ALL) NOPASSWD: /bin/cat /etc/wireguard/*
+yourusername ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/wireguard/*
 
-# 或者，如果您希望更严格的控制，可以创建一个专用脚本
 ```
 
-### 4. 创建专用脚本（可选但推荐）
 
-为了更好的安全性，可以创建一个专用脚本：
 
-```bash
-# 创建脚本目录
-sudo mkdir -p /usr/local/bin/wireguard-admin
-
-# 创建状态检查脚本
-sudo tee /usr/local/bin/wireguard-admin/status.sh << 'EOF'
-#!/bin/bash
-case "$1" in
-    "show")
-        /usr/bin/wg show
-        ;;
-    "interface")
-        /usr/bin/ip -o link show type wireguard
-        ;;
-    "process")
-        /usr/bin/pgrep -x wg-quick
-        ;;
-    "module")
-        /bin/lsmod | grep wireguard
-        ;;
-    *)
-        echo "Unknown command"
-        exit 1
-        ;;
-esac
-EOF
-
-# 设置权限
-sudo chmod 755 /usr/local/bin/wireguard-admin/status.sh
-sudo chown root:root /usr/local/bin/wireguard-admin/status.sh
-
-# 然后在 sudoers 中只允许这个脚本
-# yourusername ALL=(ALL) NOPASSWD: /usr/local/bin/wireguard-admin/status.sh
-```
-
-### 5. 修改应用配置
+### 4. 修改应用配置
 
 编辑 `src/main/resources/application.yml`，根据需要调整配置：
 
@@ -105,7 +64,7 @@ server:
   port: 8080
 ```
 
-### 6. 运行应用
+### 5. 运行应用
 
 ```bash
 # 开发环境
@@ -120,28 +79,6 @@ sudo systemctl daemon-reload
 sudo systemctl enable simplewgad
 sudo systemctl start simplewgad
 ```
-
-## 安全注意事项
-
-### 1. 最小权限原则
-- 只授予应用执行必要命令的权限
-- 避免使用 ALL=(ALL) NOPASSWD: ALL 这样的宽泛权限
-- 定期审查 sudoers 配置
-
-### 2. 命令注入防护
-- 应用代码中对命令参数进行了验证
-- 使用参数化命令执行
-- 避免直接拼接用户输入到命令中
-
-### 3. 日志记录
-- 所有特权命令执行都会被记录
-- 定期检查应用日志
-- 监控异常命令执行
-
-### 4. 网络隔离
-- 建议在内部网络运行管理面板
-- 使用防火墙限制访问
-- 启用 HTTPS
 
 ## 故障排除
 
@@ -171,25 +108,6 @@ sudo yum install wireguard-tools
 - Java 版本是否符合要求
 - 端口是否被占用
 - 配置文件格式是否正确
-
-## 开发指南
-
-### 项目结构
-```
-src/main/kotlin/com/leojay/simplewgad/
-├── controller/     # Web 控制器
-├── service/       # 业务逻辑
-├── util/          # 工具类
-├── config/        # 配置类
-├── model/         # 数据模型
-└── component/     # 组件
-```
-
-### 添加新功能
-1. 在 `WireGuardService` 中添加业务逻辑
-2. 创建相应的控制器端点
-3. 更新前端界面
-4. 添加国际化支持
 
 ### 测试
 ```bash

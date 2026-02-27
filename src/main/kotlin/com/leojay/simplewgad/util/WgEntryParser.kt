@@ -9,6 +9,7 @@ import com.leojay.simplewgad.util.constant.Symbols
 import com.tinder.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import kotlin.collections.emptyList
 
 @Component
 class WgEntryParser {
@@ -126,7 +127,7 @@ class WgEntryParser {
             line.startsWith("[Interface]") -> {
                 parserStateMachine.transition(WgEntryParseEvent.MatchInterface)
                 // 开始新的Interface
-                currentInterface = InterfaceConfig("", 0, emptyList(), null, emptyList())
+                currentInterface = InterfaceConfig("", 0, emptyList(), null)
             }
 
             line.startsWith("[Peer]") -> {
@@ -278,7 +279,7 @@ class WgEntryParser {
     }
 
     private fun resetParser() {
-        currentInterface = InterfaceConfig("", 0, emptyList(), null, emptyList())
+        currentInterface = InterfaceConfig("", 0, emptyList(), null)
         currentPeer = null
         parsedPeers.clear()
         parserStateMachine = createStateMachine()
@@ -370,7 +371,7 @@ private sealed class WgEntryParseState {
     object Idle : WgEntryParseState()
     object InInterface : WgEntryParseState() {
         var currentInterface: InterfaceConfig =
-            InterfaceConfig("", 0, emptyList(), null, emptyList())
+            InterfaceConfig("", 0, emptyList(), null)
     }
 
     object InPeers : WgEntryParseState() {

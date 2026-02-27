@@ -5,3 +5,9 @@ spring:
 logging:
   level:
     com.leojay.simplewgad: INFO
+
+wg-manager:
+  default:
+    server-ip: 0.0.0.0
+  peer-meta-data:
+    path: "data/"

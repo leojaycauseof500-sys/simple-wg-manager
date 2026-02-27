@@ -18,7 +18,9 @@ class ConfigController(
         serverConfigResult.fold(
             onSuccess = { serverConfig ->
                 model.addAttribute("serverConfig", serverConfig)
+                model.addAttribute("configPath", "/etc/wireguard/${serverConfig.interfaceName}.conf")
                 model.addAttribute("hasConfig", true)
+                model.addAttribute("peerCount", serverConfig.interfaceConfig.peers.size)
             },
             onFailure = { exception ->
                 model.addAttribute("hasConfig", false)

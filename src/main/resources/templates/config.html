@@ -6,7 +6,8 @@
     <title th:text="#{config.page.title}">服务器配置 - WireGuard 管理面板</title>
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
     <script type="importmap">
         {
           "imports": {
@@ -97,19 +98,27 @@
                 <div class="config-card">
                     <div class="config-row">
                         <span class="config-label" th:text="#{config.interface.name}">接口名称:</span>
-                        <span class="config-value" th:text="${serverConfig.interfaceConfig.interfaceName}">wg0</span>
+                        <span class="config-value" th:text="${serverConfig.interfaceName}">wg0</span>
                     </div>
                     <div class="config-row">
-                        <span class="config-label" th:text="#{config.interface.publicKey}">公钥:</span>
-                        <span class="config-value config-code" th:text="${serverConfig.interfaceConfig.publicKey}">PUBLIC_KEY_HERE</span>
+                        <span class="config-label" th:text="#{config.interface.privateKey}">私钥:</span>
+                        <span class="config-value config-code" th:text="${serverConfig.interfaceConfig.privateKey}">PRIVATE_KEY_HERE</span>
                     </div>
                     <div class="config-row">
                         <span class="config-label" th:text="#{config.interface.listenPort}">监听端口:</span>
                         <span class="config-value" th:text="${serverConfig.interfaceConfig.listenPort}">51820</span>
                     </div>
                     <div class="config-row">
+                        <span class="config-label" th:text="#{config.interface.address}">地址:</span>
+                        <span class="config-value" th:text="${#strings.listJoin(serverConfig.interfaceConfig.address, ', ')}">10.0.0.1/24</span>
+                    </div>
+                    <div class="config-row" th:if="${serverConfig.interfaceConfig.dns != null and !serverConfig.interfaceConfig.dns.isEmpty()}">
+                        <span class="config-label" th:text="#{config.interface.dns}">DNS:</span>
+                        <span class="config-value" th:text="${#strings.listJoin(serverConfig.interfaceConfig.dns, ', ')}">8.8.8.8, 1.1.1.1</span>
+                    </div>
+                    <div class="config-row">
                         <span class="config-label" th:text="#{config.interface.peerCount}">对等端数量:</span>
-                        <span class="config-value" th:text="${serverConfig.interfaceConfig.peerCount}">3</span>
+                        <span class="config-value" th:text="${serverConfig.interfaceConfig.peers.size()}">3</span>
                     </div>
                 </div>
             </div>
@@ -122,7 +131,8 @@
                 </h2>
                 <div class="config-card">
                     <div class="config-file-header">
-                        <span>路径: /etc/wireguard/<span th:text="${serverConfig.interfaceConfig.interfaceName}">wg0</span>.conf</span>
+                        <span th:text="#{config.configFile.path}">路径:</span> <span
+                            th:text="${configPath}">wg0</span>
                         <md-filled-tonal-button onclick="copyConfig()" id="copyButton">
                             <md-icon slot="icon">content_copy</md-icon>
                             <span th:text="#{config.configFile.copy}">复制配置</span>
@@ -142,11 +152,11 @@ AllowedIPs = 10.0.0.2/32
             </div>
 
             <!-- 对等端信息 -->
-            <div class="config-section" th:if="${serverConfig.interfaceConfig.peerCount > 0}">
+            <div class="config-section" th:if="${!serverConfig.interfaceConfig.peers.isEmpty()}">
                 <h2 class="section-title">
                     <md-icon>group</md-icon>
                     <span th:text="#{config.peers.title}">对等端信息</span>
-                    (<span th:text="${serverConfig.interfaceConfig.peerCount}">3</span>)
+                    (<span th:text="${serverConfig.interfaceConfig.peers.size()}">3</span>)
                 </h2>
                 <div class="peers-grid">
                     <div class="peer-card" th:each="peer, stat : ${serverConfig.interfaceConfig.peers}">
@@ -167,20 +177,13 @@ AllowedIPs = 10.0.0.2/32
                                 <span class="config-label" th:text="#{config.peer.allowedIps}">允许IP:</span>
                                 <span class="config-value" th:text="${#strings.listJoin(peer.allowedIps, ', ')}">10.0.0.2/32</span>
                             </div>
-                            <div class="config-row">
-                                <span class="config-label" th:text="#{config.peer.latestHandshake}">最后握手:</span>
-                                <span class="config-value" th:text="${peer.latestHandshake > 0 ? #dates.format(#dates.createFromTimestamp(peer.latestHandshake * 1000), 'yyyy-MM-dd HH:mm:ss') : #messages.msg('config.peer.never')}">
-                                    2024-01-01 12:00:00
-                                </span>
+                            <div class="config-row" th:if="${peer.presharedKey != null}">
+                                <span class="config-label" th:text="#{config.peer.presharedKey}">预共享密钥:</span>
+                                <span class="config-value config-code-small" th:text="${peer.presharedKey}">PRESHARED_KEY</span>
                             </div>
-                            <div class="config-row">
-                                <span class="config-label" th:text="#{config.peer.transferStats}">传输统计:</span>
-                                <span class="config-value">
-                                    <span th:text="#{config.peer.received}">接收</span>:
-                                    <span th:text="${#numbers.formatDecimal(peer.transferRx / 1024 / 1024, 1, 2)}">1.2</span> MB /
-                                    <span th:text="#{config.peer.sent}">发送</span>:
-                                    <span th:text="${#numbers.formatDecimal(peer.transferTx / 1024 / 1024, 1, 2)}">3.4</span> MB
-                                </span>
+                            <div class="config-row" th:if="${peer.persistentKeepalive != null}">
+                                <span class="config-label" th:text="#{config.peer.persistentKeepalive}">持久连接:</span>
+                                <span class="config-value" th:text="${peer.persistentKeepalive}">25</span>
                             </div>
                         </div>
                     </div>
@@ -205,6 +208,14 @@ AllowedIPs = 10.0.0.2/32
                     <div class="config-row">
                         <span class="config-label" th:text="#{config.system.uptime}">系统运行时间:</span>
                         <span class="config-value" th:text="${serverConfig.systemInfo.uptime}">up 15 days, 2:30</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label" th:text="#{config.system.ipInfo}">网络信息:</span>
+                        <span class="config-value">
+                            <pre style="font-size: 12px; max-height: 150px; overflow-y: auto;" th:text="${serverConfig.systemInfo.ipInfo}">
+eth0: inet 192.168.1.100/24
+                            </pre>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -369,9 +380,38 @@ AllowedIPs = 10.0.0.2/32
     }
 
     .peer-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1)
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-}
+
+    .error-card {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .error-icon {
+        color: #ff6b6b;
+        font-size: 32px;
+    }
+
+    .error-content {
+        flex: 1;
+    }
+
+    .error-content h3 {
+        margin: 0 0 8px 0;
+        color: #d63031;
+    }
+
+    .error-content p {
+        margin: 0 0 16px 0;
+        color: #666;
+    }
 </style>
 </body>
 </html>

@@ -14,6 +14,7 @@ class WgConfigEncoder {
      * 将 InterfaceConfig 编码为 WireGuard 配置文件字符串
      */
     fun encodeToConfig(interfaceConfig: InterfaceConfig): Result<String> = runCatching {
+
         val configBuilder = StringBuilder()
 
         // 添加 [Interface] 部分
