@@ -80,7 +80,7 @@
                 <h3>客户端添加成功！</h3>
                 <p>客户端 <strong th:text="${clientName}"></strong> 已成功添加到服务器配置。</p>
                 <div class="success-actions">
-                    <md-filled-button th:onclick="|downloadConfig('${clientName}', '${config}')|">
+                    <md-filled-button th:data-client-name="${clientName}" th:data-config="${config}" onclick="downloadConfigFromButton(this)">
                         <md-icon slot="icon">download</md-icon>
                         下载配置文件
                     </md-filled-button>
@@ -282,6 +282,13 @@ PersistentKeepalive = 25
 </footer>
 
 <script>
+    // 下载配置文件（从按钮元素获取数据）
+    function downloadConfigFromButton(button) {
+        const clientName = button.dataset.clientName;
+        const config = button.dataset.config;
+        downloadConfig(clientName, config);
+    }
+
     // 下载配置文件
     function downloadConfig(clientName, config) {
         const encodedConfig = encodeURIComponent(config);
