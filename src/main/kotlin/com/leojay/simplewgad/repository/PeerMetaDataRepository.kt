@@ -47,7 +47,6 @@ class PeerMetaDataRepository(
 
     fun addClientMetaData(client: ClientMetaData) {
         peerMetaData.clients += UUID.randomUUID().toString() to client
-        InetAddress.getByName(serverPrivateKey).hostAddress
         saveToFile()
     }
 

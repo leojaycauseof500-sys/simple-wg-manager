@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{home.page.title}">WireGuard 管理面板</title>
-    <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/home.css}" href="../static/css/home.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script type="importmap">
@@ -20,7 +20,7 @@
 
         document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
     </script>
-    
+
     <!-- 存储当前语言供JS使用 -->
     <meta name="current-lang" th:content="${#locale}">
 </head>
@@ -34,7 +34,7 @@
         </div>
         <h1 class="app-title" th:text="#{home.title}">WireGuard 管理面板</h1>
     </div>
-    
+
     <div class="header-right">
         <!-- 语言选择器 -->
         <div class="language-selector">
@@ -47,7 +47,7 @@
                 </md-select-option>
             </md-outlined-select>
         </div>
-        
+
         <!-- 用户菜单 -->
         <md-menu>
             <md-icon-button slot="trigger">
@@ -121,7 +121,7 @@
                 </div>
                 <md-icon class="stat-icon">group</md-icon>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.traffic}">今日流量</h3>
@@ -130,7 +130,7 @@
                 </div>
                 <md-icon class="stat-icon">network_check</md-icon>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.uptime}">运行时间</h3>
@@ -139,7 +139,7 @@
                 </div>
                 <md-icon class="stat-icon">schedule</md-icon>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.servers}">服务器状态</h3>
@@ -186,33 +186,33 @@
     function setCurrentLanguage() {
         const languageSelect = document.getElementById('languageSelect');
         if (!languageSelect) return;
-        
+
         // 从meta标签获取当前语言（由Thymeleaf设置）
         const metaLang = document.querySelector('meta[name="current-lang"]');
         let currentLang = metaLang ? metaLang.getAttribute('content') : null;
-        
+
         // 如果meta标签没有，尝试从URL参数获取
         if (!currentLang) {
             const urlParams = new URLSearchParams(window.location.search);
             currentLang = urlParams.get('lang');
         }
-        
+
         // 如果还没有，使用html的lang属性
         if (!currentLang) {
             currentLang = document.documentElement.lang;
         }
-        
+
         // 标准化语言代码（zh-CN 或 en-US）
         if (currentLang) {
             // 转换格式，例如：zh_CN -> zh-CN
             currentLang = currentLang.replace('_', '-');
-            
+
             // 设置选中状态
             const options = languageSelect.querySelectorAll('md-select-option');
             options.forEach(option => {
                 option.selected = false;
             });
-            
+
             const targetOption = languageSelect.querySelector(`md-select-option[value="${currentLang}"]`);
             if (targetOption) {
                 targetOption.selected = true;
@@ -224,11 +224,11 @@
     // 页面加载完成后设置当前语言
     document.addEventListener('DOMContentLoaded', function() {
         setCurrentLanguage();
-        
+
         // 语言切换事件
         document.getElementById('languageSelect').addEventListener('change', (event) =>{
             const selectedLang = event.target.value;
-            
+
             // 使用URL参数切换语言
             const url = new URL(window.location.href);
             url.searchParams.set('lang', selectedLang);
