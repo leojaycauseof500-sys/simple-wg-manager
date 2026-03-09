@@ -1,10 +1,14 @@
 spring:
   application:
     name: simple-wg-ad-dev
+  thymeleaf:
+    cache: false
+    prefix: file:src/main/resources/static/
 
 logging:
   level:
     com.leojay.simplewgad.se : DEBUG
+
 
 wg-manager:
   default:

@@ -5,7 +5,6 @@ spring:
   web:
     locale: en_US
   thymeleaf:
-    cache: false
     prefix: classpath:/static/
 
 
