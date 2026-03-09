@@ -215,7 +215,7 @@
                             </div>
                             <div class="client-row">
                                 <span class="client-label">最后握手:</span>
-                                <span class="client-value" th:text="${client.realtimeStats.latestHandshake > 0 ? #dates.format(#dates.createFromTimestamp(client.realtimeStats.latestHandshake * 1000), 'yyyy-MM-dd HH:mm:ss') : '从未'}">
+                                <span class="client-value" th:text="${client.realtimeStats.latestHandshake > 0 ? #dates.format(#dates.create(client.realtimeStats.latestHandshake * 1000), 'yyyy-MM-dd HH:mm:ss') : '从未'}">
                                     2024-01-01 12:00:00
                                 </span>
                             </div>
