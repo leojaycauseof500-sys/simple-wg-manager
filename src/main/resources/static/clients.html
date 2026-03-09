@@ -173,6 +173,9 @@
                             <md-icon-button class="cancel-name-btn" style="display: none;" th:data-index="${stat.index}" onclick="cancelClientNameFromButton(this)">
                                 <md-icon>close</md-icon>
                             </md-icon-button>
+                            <md-icon-button class="delete-client-btn" th:data-uuid="${client.uuid}" onclick="deleteClientFromButton(this)">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
                         </div>
                     </div>
                     <div class="client-content">
@@ -401,6 +404,44 @@ PersistentKeepalive = 25
         cancelBtn.style.display = 'none';
     }
 
+    // 删除客户端（从按钮元素获取数据）
+    function deleteClientFromButton(button) {
+        const clientUuid = button.dataset.uuid;
+        if (confirm('确定要删除这个客户端吗？此操作将永久删除客户端配置且无法撤销。')) {
+            deleteClient(clientUuid);
+        }
+    }
+
+    // 删除客户端
+    function deleteClient(clientUuid) {
+        const formData = new FormData();
+        formData.append('clientUuid', clientUuid);
+
+        fetch('/clients/delete', {
+            method: 'POST',
+            body: new URLSearchParams({
+                'clientUuid': clientUuid
+            }),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('客户端删除成功！');
+                // 重新加载页面以更新列表
+                window.location.reload();
+            } else {
+                alert('删除失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除过程中发生错误，请检查网络连接或控制台日志。');
+        });
+    }
+
     // 页面加载完成后执行
     document.addEventListener('DOMContentLoaded', function() {
         // 侧边栏导航点击事件
@@ -550,6 +591,14 @@ PersistentKeepalive = 25
     .client-header-actions {
         display: flex;
         gap: 4px;
+    }
+    
+    .delete-client-btn {
+        color: #f44336;
+    }
+    
+    .delete-client-btn:hover {
+        background-color: rgba(244, 67, 54, 0.1);
     }
 
     .client-row {

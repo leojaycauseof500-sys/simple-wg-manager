@@ -50,6 +50,16 @@ class PeerMetaDataRepository(
         saveToFile()
     }
 
+    fun deleteClientMetaData(clientUuid: String): Boolean {
+        return if (peerMetaData.clients.containsKey(clientUuid)) {
+            peerMetaData.clients -= clientUuid
+            saveToFile()
+            true
+        } else {
+            false
+        }
+    }
+
     private fun loadFromFile() = objectMapper.readValue(dataFile.readText(), PeerMetaData::class.java).also {
         logger.info("Loaded peer meta data from file ${dataFile.absolutePath}")
     }

@@ -52,6 +52,11 @@ interface WireGuardService {
     fun getSystemInfo(): Result<SystemInfo>
 
     /**
+     * 删除客户端
+     */
+    fun deleteClient(clientUuid: String): Result<Unit>
+
+    /**
      * 应用配置
      */
     fun saveConfig(interfaceConfig: InterfaceConfig): Result<Unit>

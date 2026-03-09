@@ -233,6 +233,35 @@ class WireGuardServiceImpl(
         }
     }
 
+    override fun deleteClient(clientUuid: String): Result<Unit> {
+        return runCatching {
+            // 从元数据中获取客户端信息
+            val unmaskedData = peersMetaDataRepository.getUnmaskedData()
+            val clientMeta = unmaskedData.clients[clientUuid]
+                ?: throw RuntimeException("找不到 UUID 为 $clientUuid 的客户端")
+            
+            // 从接口配置中移除对应的 Peer
+            val interfaceConfig = getInterfaceConfig().getOrThrow()
+            val updatedPeers = interfaceConfig.peers.filterNot { peer ->
+                peer.publicKey == clientMeta.publicKey
+            }.toMutableList()
+            
+            val updatedInterfaceConfig = interfaceConfig.copy(peers = updatedPeers)
+            
+            // 保存更新后的配置
+            saveConfig(updatedInterfaceConfig).getOrThrow()
+            
+            // 从元数据中删除客户端
+            val deleted = peersMetaDataRepository.deleteClientMetaData(clientUuid)
+            if (!deleted) {
+                throw RuntimeException("从元数据中删除客户端失败")
+            }
+            
+            // 重启服务使配置生效
+            restartWireGuardService().getOrThrow()
+        }
+    }
+
     override fun saveConfig(interfaceConfig: InterfaceConfig): Result<Unit> {
         return runCatching {
             val updatedConfig = wgConfigEncoder.encodeToConfig(interfaceConfig).getOrThrow()

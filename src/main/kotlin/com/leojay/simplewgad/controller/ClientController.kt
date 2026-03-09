@@ -101,6 +101,37 @@ class ClientController(
         return clientsPage(model)
     }
 
+    @PostMapping("/clients/delete")
+    @ResponseBody
+    fun deleteClient(
+        @RequestParam("clientUuid") clientUuid: String
+    ): ResponseEntity<Map<String, Any>> {
+        return try {
+            val result = wireGuardService.deleteClient(clientUuid)
+            result.fold(
+                onSuccess = {
+                    ResponseEntity.ok(mapOf(
+                        "success" to true,
+                        "message" to "客户端删除成功"
+                    ))
+                },
+                onFailure = { exception ->
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(mapOf(
+                            "success" to false,
+                            "message" to "删除失败: ${exception.message}"
+                        ))
+                }
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf(
+                    "success" to false,
+                    "message" to "删除失败: ${e.message}"
+                ))
+        }
+    }
+
     @GetMapping("/clients/download")
     fun downloadClientConfig(
         @RequestParam("clientName") clientName: String,
