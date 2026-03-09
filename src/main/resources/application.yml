@@ -4,6 +4,10 @@ spring:
     encoding: UTF-8
   web:
     locale: en_US
+  thymeleaf:
+    cache: false
+    prefix: classpath:/static/
+
 
 logging:
   config: classpath:logback-spring.xml
