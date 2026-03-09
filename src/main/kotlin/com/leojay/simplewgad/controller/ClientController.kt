@@ -160,4 +160,19 @@ data class ClientDisplayData(
     val uuid: String,
     val clientMeta: ClientMetaData,
     val realtimeStats: WgEntry.Peer?
-)
+) {
+    fun formatHandshakeTime(): String {
+        return if (realtimeStats?.latestHandshake != null && realtimeStats.latestHandshake > 0) {
+            try {
+                val instant = java.time.Instant.ofEpochSecond(realtimeStats.latestHandshake)
+                val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                    .withZone(java.time.ZoneId.systemDefault())
+                formatter.format(instant)
+            } catch (e: Exception) {
+                "时间格式错误"
+            }
+        } else {
+            "从未"
+        }
+    }
+}
