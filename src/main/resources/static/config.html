@@ -35,7 +35,7 @@
 
     <div class="header-right">
         <!-- 返回首页按钮 -->
-        <md-text-button href="/">
+        <md-text-button href="./">
             <md-icon slot="icon">home</md-icon>
             <span th:text="#{config.back.home}">返回首页</span>
         </md-text-button>
@@ -48,11 +48,11 @@
     <aside class="sidebar">
         <nav class="sidebar-nav">
             <md-list>
-                <md-list-item type="button" href="/">
+                <md-list-item type="button" href="./">
                     <md-icon slot="start">dashboard</md-icon>
                     <div slot="headline" th:text="#{home.nav.dashboard}">仪表板</div>
                 </md-list-item>
-                <md-list-item type="button" href="/clients">
+                <md-list-item type="button" href="./clients">
                     <md-icon slot="start">group</md-icon>
                     <div slot="headline" th:text="#{home.nav.clients}">客户端管理</div>
                 </md-list-item>
@@ -80,7 +80,7 @@
             <div class="error-content">
                 <h3 th:text="#{config.error.title}">无法获取服务器配置</h3>
                 <p th:text="${errorMessage ?: #messages.msg('config.error.message')}">请检查 WireGuard 服务是否正常运行。</p>
-                <md-filled-button href="/">
+                <md-filled-button href="./">
                     <md-icon slot="icon">refresh</md-icon>
                     <span th:text="#{config.error.retry}">返回首页</span>
                 </md-filled-button>
