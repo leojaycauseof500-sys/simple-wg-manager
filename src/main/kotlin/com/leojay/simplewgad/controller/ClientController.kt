@@ -5,6 +5,7 @@ import com.leojay.simplewgad.model.WgEntry
 import com.leojay.simplewgad.repository.PeerMetaDataRepository
 import com.leojay.simplewgad.service.WireGuardService
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -12,6 +13,7 @@ import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseBody
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -26,10 +28,10 @@ class ClientController(
         // 获取客户端元数据
         val peerMetaData = peerMetaDataRepository.getMaskedData()
         val clientsMeta = peerMetaData.clients
-        
+
         // 获取实时 WireGuard 统计信息
         val wgStatsResult = wireGuardService.getWireGuardStatistics()
-        
+
         // 构建一个从公钥到实时统计信息的映射
         val realtimeStatsByPublicKey = mutableMapOf<String, WgEntry.Peer>()
         wgStatsResult.fold(
@@ -45,7 +47,7 @@ class ClientController(
                 model.addAttribute("statsError", exception.message)
             }
         )
-        
+
         // 构建客户端显示数据列表
         val clientDisplayList = clientsMeta.map { (uuid, clientMeta) ->
             val realtimeStats = realtimeStatsByPublicKey[clientMeta.publicKey]
@@ -55,10 +57,10 @@ class ClientController(
                 realtimeStats = realtimeStats
             )
         }
-        
+
         model.addAttribute("clients", clientDisplayList)
         model.addAttribute("hasClients", clientsMeta.isNotEmpty())
-        
+
         // 保留原有的服务器配置获取（用于其他部分）
         val serverConfigResult = wireGuardService.getServerConfig()
         serverConfigResult.fold(
@@ -71,7 +73,7 @@ class ClientController(
                 model.addAttribute("configErrorMessage", exception.message)
             }
         )
-        
+
         return "clients"
     }
 
@@ -96,7 +98,7 @@ class ClientController(
                 model.addAttribute("errorMessage", exception.message)
             }
         )
-        
+
         // 重新加载页面数据
         return clientsPage(model)
     }
