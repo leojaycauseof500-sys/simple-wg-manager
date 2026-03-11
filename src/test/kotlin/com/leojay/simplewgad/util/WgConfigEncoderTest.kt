@@ -24,7 +24,7 @@ class WgConfigEncoderTest {
                 listenPort = 51820,
                 address = listOf("10.0.0.1/24"),
                 dns = listOf("8.8.8.8", "1.1.1.1"),
-                peers = listOf(
+                peers = mutableListOf(
                     PeerConfig(
                         publicKey = "public+key+peer+44+chars+base64+encoded+++==",
                         allowedIPs = listOf("10.0.0.2/32"),
@@ -57,7 +57,7 @@ class WgConfigEncoderTest {
                 privateKey = "",
                 listenPort = 51820,
                 address = listOf("10.0.0.1/24"),
-                peers = emptyList()
+                peers = mutableListOf()
             )
 
             val result = wgConfigEncoder.encodeToConfig(interfaceConfig)
@@ -72,7 +72,7 @@ class WgConfigEncoderTest {
                 privateKey = "private+key+peer+44+chars+base64+encoded++==",
                 listenPort = 51820,
                 address = listOf("10.0.0.1"), // 缺少子网掩码
-                peers = emptyList()
+                peers = mutableListOf()
             )
 
             val result = wgConfigEncoder.encodeToConfig(interfaceConfig)
@@ -87,7 +87,7 @@ class WgConfigEncoderTest {
                 privateKey = "private+key+peer+44+chars+base64+encoded++==",
                 listenPort = 51820,
                 address = listOf("10.0.0.1/24"),
-                peers = listOf(
+                peers = mutableListOf(
                     PeerConfig(
                         publicKey = "public+key+peer1+44+chars+base64+encoded++==",
                         allowedIPs = listOf("10.0.0.2/32")

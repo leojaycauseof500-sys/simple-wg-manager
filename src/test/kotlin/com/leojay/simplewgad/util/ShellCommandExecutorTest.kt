@@ -2,13 +2,13 @@ package com.leojay.simplewgad.util
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-
-class ShellCommandExecutorTest {
-
-    private val executor = ShellCommandExecutor()
-
+class ShellCommandExecutorTest() {
+    private val executor = ShellCommandExecutor("/bin/bash")
     @Test
     fun `runCommand should execute echo successfully`() {
         // 执行一个简单的命令
@@ -16,7 +16,7 @@ class ShellCommandExecutorTest {
 
         assertEquals(0, result.exitCode)
         assertTrue(result.output.contains("hello"))
-        assertEquals("", result.errMsg)
+        assertNull(result.errMsg)
     }
 
     @Test
