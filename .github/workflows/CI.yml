@@ -44,6 +44,7 @@ jobs:
 
     - name: Prepare Report Structure
       run: |
+        mkdir -p public
         cp -r ./src/main/resources/static/* public/
         mkdir -p public/jacoco
         cp -r build/jacocoHtml/* public/jacoco/
