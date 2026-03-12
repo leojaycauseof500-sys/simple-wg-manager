@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.spring") version "2.2.21"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
+    id("jacoco")
 }
 
 group = "com.leojay"
@@ -15,6 +16,18 @@ java {
     }
 }
 
+tasks.test{
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
+    }
+}
 repositories {
     mavenCentral()
 }
