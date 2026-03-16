@@ -13,8 +13,8 @@
 
 ## 系统要求
 
-- Java 17+
-- Spring Boot 3.x
+- Java 21+
+- Spring Boot 4.x
 - WireGuard 已安装
 
 ## 安装与配置
@@ -41,11 +41,8 @@ sudo visudo
 # 在文件末尾添加以下内容（根据您的运行用户调整）
 # 如果使用默认的 Spring Boot 运行用户，通常是当前用户
 # 将 'yourusername' 替换为实际运行应用的用户名
-yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg show
+yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg *
 yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg-quick *
-yourusername ALL=(ALL) NOPASSWD: /bin/cat /etc/wireguard/*
-yourusername ALL=(ALL) NOPASSWD: /usr/bin/tee /etc/wireguard/*
-
 ```
 
 
@@ -68,17 +65,10 @@ server:
 
 ```bash
 # 开发环境
-./gradlew bootRun
+./run.sh prod
 
 # 生产环境
-java -jar build/libs/simplewgad-*.jar
-
-# 或者使用 systemd 服务
-sudo cp docs/simplewgad.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable simplewgad
-sudo systemctl start simplewgad
-```
+./run.sh dev 
 
 ## 故障排除
 
@@ -109,11 +99,3 @@ sudo yum install wireguard-tools
 - 端口是否被占用
 - 配置文件格式是否正确
 
-### 测试
-```bash
-# 运行单元测试
-./gradlew test
-
-# 运行集成测试
-./gradlew integrationTest
-```
