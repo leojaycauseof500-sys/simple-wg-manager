@@ -40,3 +40,6 @@ out/
 ### Kotlin ###
 .kotlin
 .aider*
+
+### Other Tools ###
+AGENTS.md
