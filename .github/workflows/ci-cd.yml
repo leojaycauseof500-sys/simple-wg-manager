@@ -36,71 +36,16 @@ jobs:
     
     - name: Build with Gradle
       run: ./gradlew build
-    
-    - name: Run tests
-      run: ./gradlew test
-    
-    - name: Generate JaCoCo report
-      run: ./gradlew jacocoTestReport
-    
-    - name: Upload JAR artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: application-jar
-        path: build/libs/simple-wg-ad-*.jar
-        retention-days: 7
-    
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: |
-          build/test-results/
-          build/reports/tests/
-        retention-days: 7
-    
-    - name: Upload JaCoCo report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: jacoco-report
-        path: build/reports/jacoco/
-        retention-days: 7
 
-  # GitHub Pages部署阶段
-  deploy-to-github-pages:
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    
-    # 设置GitHub Pages环境
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Pages
-      uses: actions/configure-pages@v5
-    
     - name: Prepare GitHub Pages content
       run: |
         mkdir -p ${{ env.PAGES_DIR }}
         # 复制静态文件
         cp -r ./src/main/resources/static/* ${{ env.PAGES_DIR }}/
-        # 复制测试报告
+
         mkdir -p ${{ env.PAGES_DIR }}/reports
         cp -r build/jacocoHtml/* ${{ env.PAGES_DIR }}/reports/
-        # 创建索引页面
+
         cat > ${{ env.PAGES_DIR }}/index.html << 'EOF'
         <!DOCTYPE html>
         <html lang="en">
@@ -133,10 +78,37 @@ jobs:
         </body>
         </html>
         EOF
-    
+        
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'public/'
+        
+    - name: Upload JAR artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: application-jar
+        path: build/libs/simple-wg-ad-*.jar
+        retention-days: 7
+
+  # GitHub Pages部署阶段
+  deploy-to-github-pages:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
     
+    # 设置GitHub Pages环境
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    
+    steps:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
