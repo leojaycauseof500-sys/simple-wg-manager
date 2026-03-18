@@ -150,6 +150,8 @@ run_jar() {
     shift
     if [[ $# -gt 0 ]]; then
         print_info "自定义参数: $*"
+        # 将所有剩余参数传递给Java
+        java_args="$java_args $*"
     fi
     
     print_info "JAR 文件: $(basename "$jar_file")"
@@ -159,7 +161,7 @@ run_jar() {
     echo ""
     
     # 运行应用
-    java $java_args -jar "$jar_file" "$@"
+    java $java_args -jar "$jar_file"
     
     if [[ $? -eq 0 ]]; then
         print_success "应用已停止"
@@ -198,6 +200,7 @@ show_help() {
     echo -e "运行参数示例:"
     echo -e "  ${BLUE}--server.port=9090${NC}         指定端口"
     echo -e "  ${BLUE}-Dlogging.level.root=DEBUG${NC} 设置日志级别"
+    echo -e "  ${BLUE}-Dwg-manager.default.server-private-key=xxx${NC} 设置WireGuard私钥"
     echo ""
     echo -e "使用示例:"
     echo -e "  ${BLUE}./run.sh build${NC}              # 构建项目"

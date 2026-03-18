@@ -23,6 +23,35 @@
 
     <!-- 存储当前语言供JS使用 -->
     <meta name="current-lang" th:content="${#locale}">
+    
+    <!-- 传递本地化文本到JavaScript -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const i18n = {
+            dashboard: {
+                loading: /*[[#{dashboard.loading}]]*/ '加载中...',
+                today: /*[[#{dashboard.today}]]*/ '今日',
+                stable: /*[[#{dashboard.stable}]]*/ '稳定运行',
+                status: {
+                    running: /*[[#{dashboard.status.running}]]*/ '正常',
+                    stopped: /*[[#{dashboard.status.stopped}]]*/ '停止',
+                    error: /*[[#{dashboard.status.error}]]*/ '错误',
+                    starting: /*[[#{dashboard.status.starting}]]*/ '启动中',
+                    unknown: /*[[#{dashboard.status.unknown}]]*/ '未知'
+                },
+                statusPercentage: {
+                    running: /*[[#{dashboard.status.percentage.running}]]*/ '100%',
+                    stopped: /*[[#{dashboard.status.percentage.stopped}]]*/ '0%',
+                    error: /*[[#{dashboard.status.percentage.error}]]*/ '异常',
+                    starting: /*[[#{dashboard.status.percentage.starting}]]*/ '启动中',
+                    unknown: /*[[#{dashboard.status.percentage.unknown}]]*/ '-'
+                },
+                loadFailed: /*[[#{dashboard.load.failed}]]*/ '加载失败',
+                day: /*[[#{dashboard.day}]]*/ '天'
+            }
+        };
+        /*]]>*/
+    </script>
 </head>
 <body>
 <!-- 顶部导航栏 -->
@@ -113,38 +142,38 @@
 
         <!-- 统计卡片 -->
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" id="online-clients-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.clients}">在线客户端</h3>
-                    <div class="stat-value">12</div>
-                    <div class="stat-change positive">+2 今日</div>
+                    <div class="stat-value" id="online-clients-value" th:text="#{dashboard.loading}">加载中...</div>
+                    <div class="stat-change" id="online-clients-change">- <span th:text="#{dashboard.today}">今日</span></div>
                 </div>
                 <md-icon class="stat-icon">group</md-icon>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" id="traffic-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.traffic}">今日流量</h3>
-                    <div class="stat-value">1.2 GB</div>
-                    <div class="stat-change positive">+15%</div>
+                    <div class="stat-value" id="traffic-value" th:text="#{dashboard.loading}">加载中...</div>
+                    <div class="stat-change" id="traffic-change">-</div>
                 </div>
                 <md-icon class="stat-icon">network_check</md-icon>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" id="uptime-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.uptime}">运行时间</h3>
-                    <div class="stat-value">15 天</div>
-                    <div class="stat-change">稳定运行</div>
+                    <div class="stat-value" id="uptime-value" th:text="#{dashboard.loading}">加载中...</div>
+                    <div class="stat-change" id="uptime-change" th:text="#{dashboard.stable}">稳定运行</div>
                 </div>
                 <md-icon class="stat-icon">schedule</md-icon>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" id="server-status-card">
                 <div class="stat-content">
                     <h3 th:text="#{home.stats.servers}">服务器状态</h3>
-                    <div class="stat-value">正常</div>
-                    <div class="stat-change positive">100%</div>
+                    <div class="stat-value" id="server-status-value" th:text="#{dashboard.loading}">加载中...</div>
+                    <div class="stat-change" id="server-status-change">-</div>
                 </div>
                 <md-icon class="stat-icon">check_circle</md-icon>
             </div>
@@ -250,7 +279,142 @@
                 window.location.href = '/logout';
             });
         }
+
+        // 加载统计数据
+        loadDashboardStatistics();
+        
+        // 每30秒刷新一次统计数据
+        setInterval(loadDashboardStatistics, 30000);
     });
+
+    // 加载仪表板统计数据
+    async function loadDashboardStatistics() {
+        try {
+            const response = await fetch('/api/statistics/dashboard');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            updateDashboardUI(data);
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+            showErrorState();
+        }
+    }
+
+    // 更新仪表板UI
+    function updateDashboardUI(stats) {
+        // 更新在线客户端
+        const clientsElement = document.getElementById('online-clients-value');
+        const clientsChangeElement = document.getElementById('online-clients-change');
+        if (clientsElement && clientsChangeElement) {
+            clientsElement.textContent = stats.onlineClients;
+            updateChangeElement(clientsChangeElement, stats.clientChange, i18n.dashboard.today);
+        }
+
+        // 更新今日流量
+        const trafficElement = document.getElementById('traffic-value');
+        const trafficChangeElement = document.getElementById('traffic-change');
+        if (trafficElement && trafficChangeElement) {
+            const trafficGB = (stats.todayTraffic.total / (1024 * 1024 * 1024)).toFixed(2);
+            trafficElement.textContent = `${trafficGB} GB`;
+            updateChangeElement(trafficChangeElement, stats.trafficChange, '%');
+        }
+
+        // 更新运行时间
+        const uptimeElement = document.getElementById('uptime-value');
+        const uptimeChangeElement = document.getElementById('uptime-change');
+        if (uptimeElement && uptimeChangeElement) {
+            // uptime现在是秒数
+            const days = Math.floor(stats.uptime / (24 * 60 * 60));
+            uptimeElement.textContent = `${days} ${i18n.dashboard.day}`;
+            uptimeChangeElement.textContent = i18n.dashboard.stable;
+            uptimeChangeElement.className = 'stat-change';
+        }
+
+        // 更新服务器状态
+        const serverStatusElement = document.getElementById('server-status-value');
+        const serverStatusChangeElement = document.getElementById('server-status-change');
+        if (serverStatusElement && serverStatusChangeElement) {
+            const statusText = getServerStatusText(stats.serverStatus);
+            const statusClass = getServerStatusClass(stats.serverStatus);
+            
+            serverStatusElement.textContent = statusText;
+            serverStatusChangeElement.textContent = getServerStatusChangeText(stats.serverStatus);
+            serverStatusChangeElement.className = `stat-change ${statusClass}`;
+            
+            // 更新卡片状态
+            const serverCard = document.getElementById('server-status-card');
+            if (serverCard) {
+                serverCard.classList.remove('status-running', 'status-stopped', 'status-error', 'status-starting');
+                serverCard.classList.add(`status-${stats.serverStatus.toLowerCase()}`);
+            }
+        }
+    }
+
+    // 更新变化元素
+    function updateChangeElement(element, change, suffix = '') {
+        if (change > 0) {
+            element.textContent = `+${change}${suffix}`;
+            element.className = 'stat-change positive';
+        } else if (change < 0) {
+            element.textContent = `${change}${suffix}`;
+            element.className = 'stat-change negative';
+        } else {
+            element.textContent = `0${suffix}`;
+            element.className = 'stat-change';
+        }
+    }
+
+    // 获取服务器状态文本
+    function getServerStatusText(status) {
+        switch (status) {
+            case 'RUNNING': return i18n.dashboard.status.running;
+            case 'STOPPED': return i18n.dashboard.status.stopped;
+            case 'ERROR': return i18n.dashboard.status.error;
+            case 'STARTING': return i18n.dashboard.status.starting;
+            default: return i18n.dashboard.status.unknown;
+        }
+    }
+
+    // 获取服务器状态CSS类
+    function getServerStatusClass(status) {
+        switch (status) {
+            case 'RUNNING': return 'positive';
+            case 'STOPPED': return 'negative';
+            case 'ERROR': return 'negative';
+            case 'STARTING': return '';
+            default: return '';
+        }
+    }
+
+    // 获取服务器状态变化文本
+    function getServerStatusChangeText(status) {
+        switch (status) {
+            case 'RUNNING': return i18n.dashboard.statusPercentage.running;
+            case 'STOPPED': return i18n.dashboard.statusPercentage.stopped;
+            case 'ERROR': return i18n.dashboard.statusPercentage.error;
+            case 'STARTING': return i18n.dashboard.statusPercentage.starting;
+            default: return i18n.dashboard.statusPercentage.unknown;
+        }
+    }
+
+    // 显示错误状态
+    function showErrorState() {
+        const elements = [
+            'online-clients-value',
+            'traffic-value', 
+            'uptime-value',
+            'server-status-value'
+        ];
+        
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = i18n.dashboard.loadFailed;
+            }
+        });
+    }
 </script>
 </body>
 </html>

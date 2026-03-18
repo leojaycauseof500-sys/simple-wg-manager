@@ -41,11 +41,14 @@ sudo visudo
 # 在文件末尾添加以下内容（根据您的运行用户调整）
 # 如果使用默认的 Spring Boot 运行用户，通常是当前用户
 # 将 'yourusername' 替换为实际运行应用的用户名
+
 yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg *
 yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg-quick *
+
+yourusername ALL=(ALL) NOPASSWD: /usr/bin/tee data/*
+yourusername ALL=(ALL) NOPASSWD: /usr/bin/cat data/*
+
 ```
-
-
 
 ### 4. 修改应用配置
 
@@ -54,21 +57,22 @@ yourusername ALL=(ALL) NOPASSWD: /usr/bin/wg-quick *
 ```yaml
 wg-manager:
   default:
-    interface: wg0
-    config-path: /etc/wireguard/
-    
-server:
-  port: 8080
+    interface-name: wg0 #管理页面在启动时会去查找这个接口的信息
+    server-private-key: your_private_key #可以手动指定
+    listen-port: 51280
+    #    bash-path: /opt/homebrew/bin/bash #wg-quick似乎需要4.0往上,部分主机默认的bash可能版本过低,可以手动指定一下
+    bash-path: /usr/bin/bash
+
 ```
 
 ### 5. 运行应用
 
 ```bash
 # 开发环境
-./run.sh prod
+./run.sh dev
 
 # 生产环境
-./run.sh dev 
+./run.sh prod
 
 ## 故障排除
 

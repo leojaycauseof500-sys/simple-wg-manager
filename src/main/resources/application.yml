@@ -16,7 +16,7 @@ logging:
 wg-manager:
   default:
     interface-name: wg0 #管理页面在启动时会去查找这个接口的信息
-    server-private-key: mPBSVdWQq97X7/2jl3ENo/FyCLm553PhwqCCtNNpC1c= #可以手动指定
+    server-private-key: your_private_key #可以手动指定
     listen-port: 51280
 #    bash-path: /opt/homebrew/bin/bash #wg-quick似乎需要4.0往上,部分主机默认的bash可能版本过低,可以手动指定一下
     bash-path: /usr/bin/bash

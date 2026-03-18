@@ -173,10 +173,31 @@ body {
     color: #34a853;
 }
 
+.stat-change.negative {
+    color: #ea4335;
+}
+
 .stat-icon {
     font-size: 40px;
     color: #1a73e8;
     opacity: 0.7;
+}
+
+/* 服务器状态卡片样式 */
+.stat-card.status-running {
+    border-left: 4px solid #34a853;
+}
+
+.stat-card.status-stopped {
+    border-left: 4px solid #ea4335;
+}
+
+.stat-card.status-error {
+    border-left: 4px solid #ea4335;
+}
+
+.stat-card.status-starting {
+    border-left: 4px solid #fbbc05;
 }
 
 /* 快速操作 */
