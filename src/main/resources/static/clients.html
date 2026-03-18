@@ -74,17 +74,17 @@
     <!-- 内容区域 -->
     <main class="content">
         <!-- 成功提示 -->
-        <div th:if="${success}" class="success-card">
+        <div id="successCard" class="success-card" style="display: none;">
             <md-icon class="success-icon">check_circle</md-icon>
             <div class="success-content">
                 <h3>客户端添加成功！</h3>
-                <p>客户端 <strong th:text="${clientName}"></strong> 已成功添加到服务器配置。</p>
+                <p>客户端 <strong id="successClientName"></strong> 已成功添加到服务器配置。</p>
                 <div class="success-actions">
-                    <md-filled-button th:data-client-name="${clientName}" th:data-config="${config}" onclick="downloadConfigFromButton(this)">
+                    <md-filled-button id="downloadConfigBtn" onclick="downloadConfigFromUrl()">
                         <md-icon slot="icon">download</md-icon>
                         下载配置文件
                     </md-filled-button>
-                    <md-filled-tonal-button onclick="showConfig()">
+                    <md-filled-tonal-button onclick="showConfigFromUrl()">
                         <md-icon slot="icon">visibility</md-icon>
                         查看配置详情
                     </md-filled-tonal-button>
@@ -93,11 +93,11 @@
         </div>
 
         <!-- 错误提示 -->
-        <div th:if="${success == false}" class="error-card">
+        <div id="errorCard" class="error-card" style="display: none;">
             <md-icon class="error-icon">error</md-icon>
             <div class="error-content">
                 <h3>添加客户端失败</h3>
-                <p th:text="${errorMessage}">请检查 WireGuard 服务是否正常运行。</p>
+                <p id="errorMessage">请检查 WireGuard 服务是否正常运行。</p>
             </div>
         </div>
 
@@ -164,16 +164,19 @@
                             </span>
                         </h3>
                         <div class="client-header-actions">
-                            <md-icon-button class="edit-name-btn" th:data-index="${stat.index}" onclick="editClientNameFromButton(this)">
+                            <md-icon-button class="download-client-btn" th:data-uuid="${client.uuid}" onclick="downloadClientConfigFromButton(this)" title="下载配置文件">
+                                <md-icon>download</md-icon>
+                            </md-icon-button>
+                            <md-icon-button class="edit-name-btn" th:data-index="${stat.index}" onclick="editClientNameFromButton(this)" title="编辑名称">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button class="save-name-btn" style="display: none;" th:data-public-key="${client.clientMeta.publicKey}" th:data-index="${stat.index}" onclick="saveClientNameFromButton(this)">
+                            <md-icon-button class="save-name-btn" style="display: none;" th:data-public-key="${client.clientMeta.publicKey}" th:data-index="${stat.index}" onclick="saveClientNameFromButton(this)" title="保存名称">
                                 <md-icon>save</md-icon>
                             </md-icon-button>
-                            <md-icon-button class="cancel-name-btn" style="display: none;" th:data-index="${stat.index}" onclick="cancelClientNameFromButton(this)">
+                            <md-icon-button class="cancel-name-btn" style="display: none;" th:data-index="${stat.index}" onclick="cancelClientNameFromButton(this)" title="取消编辑">
                                 <md-icon>close</md-icon>
                             </md-icon-button>
-                            <md-icon-button class="delete-client-btn" th:data-uuid="${client.uuid}" onclick="deleteClientFromButton(this)">
+                            <md-icon-button class="delete-client-btn" th:data-uuid="${client.uuid}" onclick="deleteClientFromButton(this)" title="删除客户端">
                                 <md-icon>delete</md-icon>
                             </md-icon-button>
                         </div>
@@ -254,7 +257,7 @@
         </md-icon-button>
     </div>
     <div class="dialog-content">
-        <pre class="config-content" th:text="${config}">
+        <pre class="config-content">
 [Interface]
 PrivateKey = YOUR_PRIVATE_KEY
 Address = 10.0.0.2/32
@@ -284,14 +287,25 @@ PersistentKeepalive = 25
 </footer>
 
 <script>
-    // 下载配置文件（从按钮元素获取数据）
+    // 下载客户端配置（从按钮元素获取数据）
+    function downloadClientConfigFromButton(button) {
+        const clientUuid = button.dataset.uuid;
+        downloadClientConfig(clientUuid);
+    }
+
+    // 下载客户端配置
+    function downloadClientConfig(clientUuid) {
+        window.location.href = `/clients/download/${clientUuid}`;
+    }
+
+    // 下载配置文件（从按钮元素获取数据）- 用于新添加的客户端
     function downloadConfigFromButton(button) {
         const clientName = button.dataset.clientName;
         const config = button.dataset.config;
         downloadConfig(clientName, config);
     }
 
-    // 下载配置文件
+    // 下载配置文件 - 用于新添加的客户端
     function downloadConfig(clientName, config) {
         const encodedConfig = encodeURIComponent(config);
         const encodedName = encodeURIComponent(clientName);
@@ -441,8 +455,58 @@ PersistentKeepalive = 25
         });
     }
 
+    // 从URL参数获取值
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    // 下载配置文件（从URL参数获取数据）
+    function downloadConfigFromUrl() {
+        const clientName = getUrlParameter('clientName');
+        const config = getUrlParameter('config');
+        if (clientName && config) {
+            downloadConfig(decodeURIComponent(clientName), decodeURIComponent(config));
+        }
+    }
+
+    // 显示配置对话框（从URL参数获取数据）
+    function showConfigFromUrl() {
+        const config = getUrlParameter('config');
+        if (config) {
+            const dialog = document.getElementById('configDialog');
+            const configContent = document.querySelector('.config-content');
+            configContent.textContent = decodeURIComponent(config);
+            dialog.showModal();
+        }
+    }
+
     // 页面加载完成后执行
     document.addEventListener('DOMContentLoaded', function() {
+        // 处理URL参数显示成功/错误提示
+        const successParam = getUrlParameter('success');
+        if (successParam === 'true') {
+            const successCard = document.getElementById('successCard');
+            const clientName = getUrlParameter('clientName');
+            if (clientName) {
+                document.getElementById('successClientName').textContent = decodeURIComponent(clientName);
+            }
+            successCard.style.display = 'flex';
+            
+            // 清除URL参数，防止刷新时重复显示
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (successParam === 'false') {
+            const errorCard = document.getElementById('errorCard');
+            const errorMessage = getUrlParameter('errorMessage');
+            if (errorMessage) {
+                document.getElementById('errorMessage').textContent = decodeURIComponent(errorMessage);
+            }
+            errorCard.style.display = 'flex';
+            
+            // 清除URL参数，防止刷新时重复显示
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         // 侧边栏导航点击事件
         const navItems = document.querySelectorAll('.sidebar-nav md-list-item');
         navItems.forEach(item => {
@@ -590,6 +654,14 @@ PersistentKeepalive = 25
     .client-header-actions {
         display: flex;
         gap: 4px;
+    }
+    
+    .download-client-btn {
+        color: #2196f3;
+    }
+    
+    .download-client-btn:hover {
+        background-color: rgba(33, 150, 243, 0.1);
     }
     
     .delete-client-btn {

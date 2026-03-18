@@ -268,6 +268,35 @@ class WireGuardServiceImpl(
             writeConfigFile(interfaceName, updatedConfig).getOrThrow()
         }
     }
+
+    override fun getClientConfig(clientUuid: String): Result<ClientConfigResult> {
+        return runCatching {
+            // 从元数据中获取客户端信息
+            val unmaskedData = peersMetaDataRepository.getUnmaskedData()
+            val clientMeta = unmaskedData.clients[clientUuid]
+                ?: throw RuntimeException("找不到 UUID 为 $clientUuid 的客户端")
+            
+            // 获取服务器端点
+            val serverEndpoint = getServerEndpoint().getOrThrow()
+            
+            // 生成客户端配置
+            val clientConfig = wgConfigEncoder.generateClientConfig(
+                clientName = clientMeta.name,
+                privateKey = clientMeta.privateKey,
+                serverPublicKey = peersMetaData.server.publicKey,
+                serverEndpoint = serverEndpoint,
+                allowedIps = clientMeta.address,
+                dnsServers = listOf("8.8.8.8", "1.1.1.1") // 默认 DNS 服务器
+            ).getOrThrow()
+            
+            ClientConfigResult(
+                clientName = clientMeta.name,
+                clientConfig = clientConfig,
+                publicKey = clientMeta.publicKey,
+                privateKey = clientMeta.privateKey
+            )
+        }
+    }
     // ============ 私有方法 ============
 
     private fun checkProcessRunning(wgEntries: List<WgEntry>): Boolean {

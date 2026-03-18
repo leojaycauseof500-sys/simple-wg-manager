@@ -27,7 +27,7 @@ cd simplewgad
 
 ### 2. 构建项目
 ```bash
-./gradlew build
+./run.sh build
 ```
 
 ### 3. 配置 sudoers 权限（重要！）

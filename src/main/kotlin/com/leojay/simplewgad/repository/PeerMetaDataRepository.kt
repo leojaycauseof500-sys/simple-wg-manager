@@ -33,10 +33,7 @@ class PeerMetaDataRepository(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    private var peerMetaData: PeerMetaData = PeerMetaData(
-        server = ServerMetaData("", "", ""),
-        clients = mapOf()
-    )
+    private lateinit var peerMetaData: PeerMetaData
 
     fun getMaskedData() = peerMetaData.copy(
         server = peerMetaData.server.copy(privateKey = "******"),
@@ -86,14 +83,18 @@ class PeerMetaDataRepository(
         } catch (e: Exception) {
             logger.error("Failed to load peer meta data from file ${dataFile.absolutePath}", e)
             //读取失败的话用默认值填充
-            peerMetaData.server = peerMetaData.server.copy(
-                privateKey = serverPrivateKey,
-                address = "10.0.7.1",
-                publicKey = peerMetaData.server.publicKey.ifEmpty { getPublicKey() }
+
+            peerMetaData = PeerMetaData(
+                server = ServerMetaData(
+                    privateKey = serverPrivateKey,
+                    address = "10.0.7.1/24",
+                    publicKey = getPublicKey()
+                ),
+                clients = mapOf()
             ).also {
                 logger.error("Failed to load peer meta data from file ${dataFile.absolutePath}", e)
-                saveToFile()
             }
+            saveToFile()
         }
     }
 

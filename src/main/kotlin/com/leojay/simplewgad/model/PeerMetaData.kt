@@ -42,4 +42,10 @@ data class ServerMetaData(
     val privateKey: String,
     val publicKey: String ,
     val address: String
-)
+){
+    init {
+        require(privateKey.isNotEmpty()) { "Private Key must not be empty" }
+        require(publicKey.isNotEmpty()) { "Public Key must not be empty" }
+        require(address.isNotEmpty()) { "Address must not be empty" }
+    }
+}

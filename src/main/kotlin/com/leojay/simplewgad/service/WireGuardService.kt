@@ -60,6 +60,11 @@ interface WireGuardService {
      * 应用配置
      */
     fun saveConfig(interfaceConfig: InterfaceConfig): Result<Unit>
+
+    /**
+     * 获取客户端配置
+     */
+    fun getClientConfig(clientUuid: String): Result<ClientConfigResult>
 }
 
 /**

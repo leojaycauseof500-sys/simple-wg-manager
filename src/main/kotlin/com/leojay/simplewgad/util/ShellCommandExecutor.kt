@@ -69,10 +69,11 @@ class ShellCommandExecutor(
      */
     private fun preProcessing(command: String): String {
         //wg-quick可能需要bash版本4.0以上，且默认使用/bin/bash。所以需要手动指定一下bash
-        return if (command.contains("wg-quick")) {
-            "$bashPath $command"
-        } else {
-            command
-        }
+//        return if (command.contains("wg-quick")) {
+//            "$bashPath $command"
+//        } else {
+//            command
+//        }
+        return command
     }
 }

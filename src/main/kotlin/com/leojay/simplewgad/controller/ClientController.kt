@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.PathVariable
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -24,7 +25,21 @@ class ClientController(
 ) {
 
     @GetMapping("/clients")
-    fun clientsPage(model: Model): String {
+    fun clientsPage(
+        @RequestParam(value = "success", required = false) success: Boolean?,
+        @RequestParam(value = "clientName", required = false) clientName: String?,
+        @RequestParam(value = "config", required = false) config: String?,
+        @RequestParam(value = "publicKey", required = false) publicKey: String?,
+        @RequestParam(value = "errorMessage", required = false) errorMessage: String?,
+        model: Model
+    ): String {
+        // 处理重定向参数
+        success?.let { model.addAttribute("success", it) }
+        clientName?.let { model.addAttribute("clientName", it) }
+        config?.let { model.addAttribute("config", it) }
+        publicKey?.let { model.addAttribute("publicKey", it) }
+        errorMessage?.let { model.addAttribute("errorMessage", it) }
+
         // 获取客户端元数据
         val peerMetaData = peerMetaDataRepository.getMaskedData()
         val clientsMeta = peerMetaData.clients
@@ -85,22 +100,16 @@ class ClientController(
     ): String {
         val result = wireGuardService.addClient(clientName, allowedIps)
 
-        result.fold(
+        return result.fold(
             onSuccess = { clientConfig ->
-                model.addAttribute("success", true)
-                model.addAttribute("clientName", clientConfig.clientName)
-                model.addAttribute("clientConfig", clientConfig.clientConfig)
-                model.addAttribute("publicKey", clientConfig.publicKey)
-                model.addAttribute("privateKey", clientConfig.privateKey)
+                // 使用重定向参数传递成功信息
+                "redirect:/clients?success=true&clientName=${URLEncoder.encode(clientConfig.clientName, StandardCharsets.UTF_8.toString())}&config=${URLEncoder.encode(clientConfig.clientConfig, StandardCharsets.UTF_8.toString())}&publicKey=${URLEncoder.encode(clientConfig.publicKey, StandardCharsets.UTF_8.toString())}"
             },
             onFailure = { exception ->
-                model.addAttribute("success", false)
-                model.addAttribute("errorMessage", exception.message)
+                // 使用重定向参数传递错误信息
+                "redirect:/clients?success=false&errorMessage=${URLEncoder.encode(exception.message ?: "未知错误", StandardCharsets.UTF_8.toString())}"
             }
         )
-
-        // 重新加载页面数据
-        return clientsPage(model)
     }
 
     @PostMapping("/clients/delete")
@@ -150,6 +159,31 @@ class ClientController(
         return ResponseEntity.ok()
             .headers(headers)
             .body(config.toByteArray(StandardCharsets.UTF_8))
+    }
+
+    @GetMapping("/clients/download/{clientUuid}")
+    fun downloadClientConfigByUuid(
+        @PathVariable clientUuid: String
+    ): ResponseEntity<ByteArray> {
+        return wireGuardService.getClientConfig(clientUuid).fold(
+            onSuccess = { clientConfig ->
+                val encodedClientName = URLEncoder.encode(clientConfig.clientName, StandardCharsets.UTF_8.toString())
+                val filename = "wireguard-$encodedClientName.conf"
+
+                val headers = HttpHeaders().apply {
+                    add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+                    add(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
+                }
+
+                ResponseEntity.ok()
+                    .headers(headers)
+                    .body(clientConfig.clientConfig.toByteArray(StandardCharsets.UTF_8))
+            },
+            onFailure = { exception ->
+                ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("客户端配置获取失败: ${exception.message}".toByteArray(StandardCharsets.UTF_8))
+            }
+        )
     }
 }
 
