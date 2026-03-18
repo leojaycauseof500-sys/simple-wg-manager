@@ -99,7 +99,7 @@ jobs:
         cp -r ./src/main/resources/static/* ${{ env.PAGES_DIR }}/
         # 复制测试报告
         mkdir -p ${{ env.PAGES_DIR }}/reports
-        cp -r build/reports/jacoco/jacocoTestReport/html/* ${{ env.PAGES_DIR }}/reports/
+        cp -r build/jacocoHtml/* ${{ env.PAGES_DIR }}/reports/
         # 创建索引页面
         cat > ${{ env.PAGES_DIR }}/index.html << 'EOF'
         <!DOCTYPE html>
