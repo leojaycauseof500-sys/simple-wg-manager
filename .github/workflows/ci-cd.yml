@@ -129,98 +129,11 @@ jobs:
         echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-    
-    - name: Create deployment script
+
+    - name: Deploy Jar to Server
       run: |
-        cat > deploy.sh << 'EOF'
-        #!/bin/bash
-        set -e
-        
-        SERVER_HOST="${{ secrets.SERVER_HOST }}"
-        SERVER_USER="${{ secrets.SERVER_USERNAME }}"
-        DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-        JAR_NAME="${{ env.JAR_NAME }}"
-        SERVICE_NAME="${{ env.SERVICE_NAME }}"
-        
-        echo "Starting deployment to $SERVER_HOST..."
-        
-        # 上传JAR文件
-        echo "Uploading JAR file..."
-        scp simple-wg-ad-*.jar $SERVER_USER@$SERVER_HOST:$DEPLOY_DIR/$JAR_NAME
-        
-        # 在服务器上执行部署命令
-        echo "Executing deployment commands on server..."
-        ssh $SERVER_USER@$SERVER_HOST << 'SSH_EOF'
-        set -e
-        
-        DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-        JAR_NAME="${{ env.JAR_NAME }}"
-        SERVICE_NAME="${{ env.SERVICE_NAME }}"
-        PRIVATE_KEY="${{ secrets.SERVER_PRIVATE_KEY }}"
-        
-        echo "Creating deployment directory if not exists..."
-        sudo mkdir -p $DEPLOY_DIR
-        sudo chown $USER:$USER $DEPLOY_DIR
-        
-        echo "Creating backup of current JAR..."
-        if [ -f "$DEPLOY_DIR/simple-wg-ad.jar" ]; then
-          cp $DEPLOY_DIR/simple-wg-ad.jar $DEPLOY_DIR/simple-wg-ad.jar.backup.$(date +%Y%m%d%H%M%S)
-        fi
-        
-        echo "Updating JAR file..."
-        mv $DEPLOY_DIR/$JAR_NAME $DEPLOY_DIR/simple-wg-ad.jar
-        
-        # 使用项目中的run.sh脚本创建启动命令
-        echo "Creating systemd service using project run.sh..."
-        sudo tee /etc/systemd/system/$SERVICE_NAME.service > /dev/null << SERVICE_EOF
-        [Unit]
-        Description=Simple WireGuard Manager
-        After=network.target
-        
-        [Service]
-        Type=simple
-        User=$USER
-        WorkingDirectory=$DEPLOY_DIR
-        # 使用run.sh脚本启动，传递私钥作为参数
-        ExecStart=$DEPLOY_DIR/run.sh prod -Dwg-manager.default.server-private-key="$PRIVATE_KEY"
-        Restart=on-failure
-        RestartSec=10
-        
-        [Install]
-        WantedBy=multi-user.target
-        SERVICE_EOF
-        
-        # 上传run.sh脚本到服务器
-        echo "Uploading run.sh script..."
-        SSH_EOF
-        
-        # 上传run.sh脚本
-        scp ../../run.sh $SERVER_USER@$SERVER_HOST:$DEPLOY_DIR/
-        ssh $SERVER_USER@$SERVER_HOST "chmod +x $DEPLOY_DIR/run.sh"
-        
-        # 继续执行部署命令
-        ssh $SERVER_USER@$SERVER_HOST << 'SSH_EOF2'
-        DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-        SERVICE_NAME="${{ env.SERVICE_NAME }}"
-        
-        # 重新加载systemd并重启服务
-        echo "Reloading systemd and restarting service..."
-        sudo systemctl daemon-reload
-        sudo systemctl enable $SERVICE_NAME
-        sudo systemctl restart $SERVICE_NAME
-        
-        echo "Checking service status..."
-        sudo systemctl status $SERVICE_NAME --no-pager
-        
-        echo "Deployment completed successfully!"
-        SSH_EOF2
-        EOF
-        
-        chmod +x deploy.sh
-    
-    - name: Execute deployment
-      run: ./deploy.sh
-    
+        scp simple-wg-ad-*.jar ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}}:${{env.PAGES_DIR}}/${{env.JAR_NAME}}
+
     - name: Cleanup SSH key
       run: |
         rm -f ~/.ssh/id_rsa
