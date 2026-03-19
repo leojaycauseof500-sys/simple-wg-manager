@@ -41,6 +41,7 @@ jobs:
       run: |
         mkdir -p ${{ env.PAGES_DIR }}
         # 复制静态文件
+        mkdir -p ${{env.PAGES_DIR}}/static
         cp -r ./src/main/resources/static/* ${{ env.PAGES_DIR }}/static/
 
         mkdir -p ${{ env.PAGES_DIR }}/reports
