@@ -41,7 +41,7 @@ jobs:
       run: |
         mkdir -p ${{ env.PAGES_DIR }}
         # 复制静态文件
-        cp -r ./src/main/resources/static/* ${{ env.PAGES_DIR }}/
+        cp -r ./src/main/resources/static/* ${{ env.PAGES_DIR }}/static/
 
         mkdir -p ${{ env.PAGES_DIR }}/reports
         cp -r build/jacocoHtml/* ${{ env.PAGES_DIR }}/reports/
@@ -70,11 +70,8 @@ jobs:
                 <a href="./reports/index.html" class="btn">View Coverage Report</a>
             </div>
             <div class="card">
-                <h2>Application</h2>
-                <p>The main application is deployed separately.</p>
-                <p>Build Number: ${{ github.run_number }}</p>
-                <p>Commit: <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></p>
-            </div>
+                <h2>Static Page</h2>
+                <a href="./static/index.html" class="btn">View Coverage Report</a>
         </body>
         </html>
         EOF
