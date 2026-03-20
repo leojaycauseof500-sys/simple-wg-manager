@@ -132,6 +132,7 @@ jobs:
 
     - name: Deploy Jar to Server
       run: |
+        ssh ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}} "mkdir ${{env.PAGES_DIR}}/${{env.JAR_NAME}}"
         scp simple-wg-ad-*.jar ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}}:${{env.PAGES_DIR}}/${{env.JAR_NAME}}
 
     - name: Cleanup SSH key
