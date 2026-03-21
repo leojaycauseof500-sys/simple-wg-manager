@@ -139,7 +139,7 @@ jobs:
     - name: Run Jar
       run: |
         ssh ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}} "java -jar \
-        ${{env.DEPLOY_DIR}}/simple-wg-ad-${{env.VERSION.jar}} \
+        ${{env.DEPLOY_DIR}}/simple-wg-ad-${{env.VERSION}}.jar \
         --spring.profiles.active=prod \
         --wg-manager.default.server-private-key=${{secrets.SERVER_PRIVATE_KEY}}"
         
