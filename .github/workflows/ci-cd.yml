@@ -17,6 +17,7 @@ env:
   PAGES_BRANCH: "gh-pages"
   PAGES_DIR: "public"
 
+  VERSION: "0.0.1-SNAPSHOT"
 jobs:
   # 构建和测试阶段
   build-and-test:
@@ -132,9 +133,16 @@ jobs:
 
     - name: Deploy Jar to Server
       run: |
-        ssh ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}} "mkdir ${{env.PAGES_DIR}}"
-        scp simple-wg-ad-*.jar ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}}:${{env.PAGES_DIR}}/${{env.JAR_NAME}}
-
+        ssh ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}} "mkdir -p ${{env.DEPLOY_DIR}}"
+        scp simple-wg-ad-*.jar ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}}:${{env.DEPLOY_DIR}}
+        
+    - name: Run Jar
+      run: |
+        ssh ${{secrets.SERVER_USERNAME}}@${{secrets.SERVER_HOST}} "java -jar 
+        ${{env.DEPLOY_DIR}}/simple-wg-ad-${{env.VERSION.jar}} 
+        --spring.profiles.active=prod 
+        --wg-manager.default.server-private-key=${{secrets.SERVER_PRIVATE_KEY}}"
+        
     - name: Cleanup SSH key
       run: |
         rm -f ~/.ssh/id_rsa
