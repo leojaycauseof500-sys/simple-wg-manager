@@ -10,7 +10,7 @@ on:
 env:
   # 部署相关环境变量
   JAR_NAME: "simple-wg-ad-${{ github.run_number }}.jar"
-  DEPLOY_DIR: "/opt/simple-wg-manager"
+  DEPLOY_DIR: "~/simple-wg-manager"
   SERVICE_NAME: "simple-wg-manager"
   
   # GitHub Pages相关
