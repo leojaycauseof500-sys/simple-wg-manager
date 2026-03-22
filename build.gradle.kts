@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.leojay"
-version = "0.0.1-SNAPSHOT"
+version = "1.0.0"
 description = "simple-wg-ad"
 
 java {
@@ -39,6 +39,7 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.tinder.statemachine:statemachine:0.2.0")
+    implementation("org.springframework.ai:spring-ai-mcp-server-webmvc-spring-boot-starter:1.0.0-M6")
     testImplementation("org.springframework.boot:spring-boot-starter-thymeleaf-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")

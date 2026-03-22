@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper
 import java.io.File
-import java.net.InetAddress
 import java.util.UUID
 
 //todo :考虑加个锁
@@ -39,7 +38,6 @@ class PeerMetaDataRepository(
         server = peerMetaData.server.copy(privateKey = "******"),
         clients = peerMetaData.clients.mapValues { it.value.copy(privateKey = "******") }
     )
-
     fun getUnmaskedData() = peerMetaData.copy()
 
     fun addClientMetaData(client: ClientMetaData) {
