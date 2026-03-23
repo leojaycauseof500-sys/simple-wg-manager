@@ -7,7 +7,6 @@ spring:
   thymeleaf:
     prefix: classpath:/static/
 
-
 logging:
   config: classpath:logback-spring.xml
   level:
@@ -20,3 +19,7 @@ wg-manager:
     listen-port: 51280
 #    bash-path: /opt/homebrew/bin/bash #wg-quick似乎需要4.0往上,部分主机默认的bash可能版本过低,可以手动指定一下
     bash-path: /usr/bin/bash
+
+server:
+  address: 0.0.0.0
+  port: 8080

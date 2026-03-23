@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 DEFAULT_ENV="dev"
 DEFAULT_PORT="8080"
 JAVA_VERSION="21"
+OBJECT_VERSION="1.0.0"
 
 # 目录和文件路径
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -103,7 +104,7 @@ find_jar_file() {
     local jar_file
     
     # 优先查找可执行的 Spring Boot JAR（不包含 -plain 后缀）
-    jar_file=$(find "$LIB_DIR" -name "*.jar" -type f ! -name "*-plain.jar" | head -n 1)
+    jar_file=$(find "$LIB_DIR" -name "simple-wg-ad-$OBJECT_VERSION.jar" -type f ! -name "*-plain.jar" | head -n 1)
     
     # 如果没找到，再查找任何 JAR 文件
     if [[ -z "$jar_file" ]]; then
