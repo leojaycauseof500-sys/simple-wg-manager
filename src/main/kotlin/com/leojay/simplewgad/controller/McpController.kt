@@ -46,7 +46,6 @@ class McpController(
             return ResponseEntity.accepted().build()
         }
 
-
         val response = when(request.method){
             "initialize" -> handleInitialize(request)
             "tools/list" -> handleToolsList(request)
