@@ -1,7 +1,7 @@
 # MCP Server 实现文档
 
 ## 概述
-已为simple-wg-manager实现MCP (Model Context Protocol) Server功能，支持通过JSON-RPC over HTTP/SSE提供WireGuard管理工具。
+simple-wg-manager实现MCP (Model Context Protocol) Server功能，支持通过JSON-RPC over HTTP/SSE提供WireGuard管理工具。
 
 ## 实现的接口
 
@@ -48,97 +48,3 @@
 14. `get_traffic_statistics` - 获取流量统计信息
 15. `get_uptime_statistics` - 获取运行时间统计
 
-## 技术实现
-
-### 文件位置
-- `src/main/kotlin/com/leojay/simplewgad/controller/McpController.kt` - MCP控制器
-
-### 依赖注入
-- `WireGuardService` - WireGuard管理服务
-- `StatisticsService` - 统计服务
-
-### 错误处理
-- 使用`Result<T>`类型进行错误处理
-- 统一的JSON-RPC错误响应格式
-- 详细的错误信息和时间戳
-
-## 使用示例
-
-### 1. 初始化连接
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "initialize",
-  "params": {}
-}
-```
-
-### 2. 获取tools列表
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/list",
-  "params": {}
-}
-```
-
-### 3. 调用tool
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 3,
-  "method": "tools/call",
-  "params": {
-    "name": "get_wireguard_status",
-    "arguments": {}
-  }
-}
-```
-
-### 4. 添加客户端
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "method": "tools/call",
-  "params": {
-    "name": "add_client",
-    "arguments": {
-      "clientName": "new-client",
-      "allowedIps": "10.0.0.2/32"
-    }
-  }
-}
-```
-
-## 构建和测试
-
-### 构建命令
-```bash
-./gradlew build
-```
-
-### 运行服务器
-```bash
-./gradlew bootRun
-```
-
-### 测试命令
-```bash
-./gradlew test
-```
-
-## 下一步改进建议
-
-1. **添加工具调用日志** - 记录所有tool调用
-2. **实现权限控制** - 基于角色的访问控制
-3. **添加WebSocket支持** - 双向实时通信
-4. **实现工具调用限制** - 频率限制和配额管理
-5. **添加工具调用历史** - 记录和查询历史调用
-6. **实现工具调用验证** - 参数验证和输入清理
-7. **添加工具调用监控** - 性能监控和告警
-8. **实现工具调用缓存** - 缓存频繁调用的结果
-9. **添加工具调用批处理** - 支持批量调用多个工具
-10. **实现工具调用依赖** - 工具之间的依赖关系管理
